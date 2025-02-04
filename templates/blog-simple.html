@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Blog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .card {
+            background-color: #2d2d2d;
+            border: 1px solid #3d3d3d;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            background-color: #2d2d2d;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        .tag {
+            transition: opacity 0.2s;
+        }
+
+        .tag:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-8">
+                    <a href="#" class="text-2xl font-bold text-blue-500">TechBlog</a>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="#" class="text-gray-300 hover:text-white">Home</a>
+                        <a href="#" class="text-gray-300 hover:text-white">Artigos</a>
+                        <a href="#" class="text-gray-300 hover:text-white">Tutoriais</a>
+                        <a href="#" class="text-gray-300 hover:text-white">Sobre</a>
+                    </div>
+                </div>
+                <button class="md:hidden text-gray-300">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Featured Post -->
+        <article class="card rounded-lg p-6 mb-12">
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="md:w-1/2">
+                    <img src="https://via.placeholder.com/600x400" alt="Featured Post" class="rounded-lg w-full h-64 object-cover">
+                </div>
+                <div class="md:w-1/2 space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="tag bg-blue-500 text-white px-3 py-1 rounded-full text-sm">Inteligência Artificial</span>
+                        <span class="text-gray-400 text-sm">5 min de leitura</span>
+                    </div>
+                    <h1 class="text-3xl font-bold">O Impacto da IA no Desenvolvimento de Software</h1>
+                    <p class="text-gray-400">Como a inteligência artificial está revolucionando a forma como desenvolvemos software e quais são as implicações para o futuro da programação.</p>
+                    <div class="flex items-center space-x-4">
+                        <img src="https://via.placeholder.com/40" alt="Author" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-medium">João Silva</p>
+                            <p class="text-sm text-gray-400">12 Jan 2024</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Latest Posts -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6">Últimos Artigos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Post Card 1 -->
+                <article class="card rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                    <div class="p-6 space-y-4">
+                        <span class="tag bg-green-500 text-white px-3 py-1 rounded-full text-sm">Web Dev</span>
+                        <h3 class="text-xl font-bold">O Futuro do React em 2024</h3>
+                        <p class="text-gray-400">Explorando as novidades e tendências do React para este ano.</p>
+                    </div>
+                </article>
+
+                <!-- Post Card 2 -->
+                <article class="card rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                    <div class="p-6 space-y-4">
+                        <span class="tag bg-purple-500 text-white px-3 py-1 rounded-full text-sm">Cloud</span>
+                        <h3 class="text-xl font-bold">AWS vs Azure: Qual Escolher?</h3>
+                        <p class="text-gray-400">Uma análise comparativa entre os dois gigantes da nuvem.</p>
+                    </div>
+                </article>
+
+                <!-- Post Card 3 -->
+                <article class="card rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                    <div class="p-6 space-y-4">
+                        <span class="tag bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">Segurança</span>
+                        <h3 class="text-xl font-bold">Cibersegurança em 2024</h3>
+                        <p class="text-gray-400">As principais ameaças e práticas de segurança.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Categories -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6">Categorias</h2>
+            <div class="flex flex-wrap gap-4">
+                <a href="#" class="tag bg-blue-500 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-brain mr-2"></i>Inteligência Artificial
+                </a>
+                <a href="#" class="tag bg-green-500 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-code mr-2"></i>Desenvolvimento Web
+                </a>
+                <a href="#" class="tag bg-purple-500 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-cloud mr-2"></i>Cloud Computing
+                </a>
+                <a href="#" class="tag bg-yellow-500 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-shield-alt mr-2"></i>Cibersegurança
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#2d2d2d] mt-12 border-t border-[#3d3d3d]">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold text-blue-500">TechBlog</h3>
+                    <p class="text-gray-400 mt-2">Explorando o futuro da tecnologia</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="border-t border-[#3d3d3d] mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 TechBlog. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

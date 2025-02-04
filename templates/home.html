@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
+        .bg-gradient {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #4f46e5 100%);
+            animation: gradientAnimation 15s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+        }
+
+        .menu-item {
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .balance-card {
+            background: linear-gradient(45deg, #0ea5e9, #2563eb);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .balance-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: cardShine 3s infinite;
+        }
+
+        @keyframes cardShine {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+
+        .profile-dropdown {
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .profile-trigger:hover .profile-dropdown {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient overflow-hidden">
+    <div id="particles-js"></div>
+    
+    <div class="content-wrapper min-h-screen">
+        <!-- Header -->
+        <header class="glass-card p-4">
+            <div class="container mx-auto">
+                <div class="flex items-center justify-between">
+                    <!-- Logo -->
+                    <div class="text-white text-2xl font-bold">
+                        Logo
+                    </div>
+
+                    <!-- User Info & Balance -->
+                    <div class="flex items-center space-x-6">
+                        <!-- Balance Card -->
+                        <div class="balance-card rounded-lg p-3 relative group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
+                                    <i class="fas fa-wallet text-white text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs text-white/70">Saldo Disponível</p>
+                                        <button onclick="toggleBalance()" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <i id="eyeIcon" class="fas fa-eye text-white/60 hover:text-white text-xs transition-colors"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-baseline gap-1 mt-0.5">
+                                        <span class="text-xs text-white/60">R$</span>
+                                        <p id="balanceAmount" class="text-lg font-bold text-white">5.000,00</p>
+                                        <p id="balanceHidden" class="text-lg font-bold text-white hidden">••••••</p>
+                                        <span class="text-xs text-emerald-400 ml-1">+2.5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Profile -->
+                        <div class="profile-trigger relative">
+                            <div class="flex items-center space-x-3 cursor-pointer">
+                                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white font-medium">João Silva</p>
+                                    <p class="text-white/60 text-sm">Premium</p>
+                                </div>
+                                <i class="fas fa-chevron-down text-white/60"></i>
+                            </div>
+
+                            <!-- Dropdown Menu -->
+                            <div class="profile-dropdown absolute right-0 mt-2 w-48 glass-card rounded-xl">
+                                <div class="py-2">
+                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
+                                        <i class="fas fa-user-circle mr-2"></i> Perfil
+                                    </a>
+                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
+                                        <i class="fas fa-cog mr-2"></i> Configurações
+                                    </a>
+                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Sair
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Quick Actions -->
+                <div class="glass-card rounded-xl p-6 space-y-4">
+                    <h2 class="text-xl font-bold text-white">Ações Rápidas</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
+                            <i class="fas fa-exchange-alt mb-2"></i>
+                            <p>Transferir</p>
+                        </button>
+                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
+                            <i class="fas fa-qrcode mb-2"></i>
+                            <p>Pix</p>
+                        </button>
+                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
+                            <i class="fas fa-file-invoice-dollar mb-2"></i>
+                            <p>Pagar</p>
+                        </button>
+                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
+                            <i class="fas fa-credit-card mb-2"></i>
+                            <p>Cartões</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Transações Recentes</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                                    <i class="fas fa-arrow-down text-green-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white">Recebido de Maria</p>
+                                    <p class="text-white/60 text-sm">Hoje, 14:30</p>
+                                </div>
+                            </div>
+                            <p class="text-green-500 font-medium">+ R$ 150,00</p>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                                    <i class="fas fa-arrow-up text-red-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white">Pagamento Netflix</p>
+                                    <p class="text-white/60 text-sm">Ontem, 09:15</p>
+                                </div>
+                            </div>
+                            <p class="text-red-500 font-medium">- R$ 39,90</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Bills -->
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">Próximas Faturas</h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-white/5 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-white">Cartão de Crédito</p>
+                                <p class="text-white font-medium">R$ 1.250,00</p>
+                            </div>
+                            <div class="w-full bg-white/10 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: 70%"></div>
+                            </div>
+                            <p class="text-white/60 text-sm mt-2">Vence em 5 dias</p>
+                        </div>
+                        <div class="p-4 bg-white/5 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-white">Internet</p>
+                                <p class="text-white font-medium">R$ 99,90</p>
+                            </div>
+                            <div class="w-full bg-white/10 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: 30%"></div>
+                            </div>
+                            <p class="text-white/60 text-sm mt-2">Vence em 15 dias</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        particlesJS('particles-js',
+        {
+            "particles": {
+                "number": {
+                    "value": 80,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#ffffff"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": true
+                },
+                "size": {
+                    "value": 3,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#ffffff",
+                    "opacity": 0.4,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": true,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                }
+            },
+            "retina_detect": true
+        });
+
+        // Balance visibility toggle
+        function toggleBalance() {
+            const balanceAmount = document.getElementById('balanceAmount');
+            const balanceHidden = document.getElementById('balanceHidden');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (balanceAmount.classList.contains('hidden')) {
+                balanceAmount.classList.remove('hidden');
+                balanceHidden.classList.add('hidden');
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            } else {
+                balanceAmount.classList.add('hidden');
+                balanceHidden.classList.remove('hidden');
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            }
+        }
+    </script>
+</body>
+</html> 

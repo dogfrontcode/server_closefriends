@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Blog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
+        .bg-dark {
+            background: #0f172a;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .blog-card {
+            transition: all 0.3s ease;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .tag {
+            transition: all 0.2s ease;
+        }
+
+        .tag:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-dark text-gray-100">
+    <div id="particles-js"></div>
+    
+    <div class="content-wrapper min-h-screen">
+        <!-- Header -->
+        <header class="glass-card sticky top-0">
+            <nav class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-8">
+                        <a href="#" class="text-2xl font-bold text-blue-500">TechBlog</a>
+                        <div class="hidden md:flex space-x-6">
+                            <a href="#" class="nav-link text-gray-300 hover:text-white">Home</a>
+                            <a href="#" class="nav-link text-gray-300 hover:text-white">Artigos</a>
+                            <a href="#" class="nav-link text-gray-300 hover:text-white">Tutoriais</a>
+                            <a href="#" class="nav-link text-gray-300 hover:text-white">Sobre</a>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="p-2 rounded-full hover:bg-gray-700/50">
+                            <i class="fas fa-search text-gray-400 hover:text-white"></i>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-gray-700/50">
+                            <i class="fas fa-moon text-gray-400 hover:text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-6 py-8">
+            <!-- Featured Post -->
+            <div class="glass-card rounded-xl p-6 mb-12">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="md:w-1/2">
+                        <img src="https://via.placeholder.com/600x400" alt="Featured Post" class="rounded-lg w-full h-64 object-cover">
+                    </div>
+                    <div class="md:w-1/2 space-y-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="tag px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm">Inteligência Artificial</span>
+                            <span class="text-gray-400 text-sm">5 min de leitura</span>
+                        </div>
+                        <h1 class="text-3xl font-bold">O Impacto da IA no Desenvolvimento de Software</h1>
+                        <p class="text-gray-400">Como a inteligência artificial está revolucionando a forma como desenvolvemos software e quais são as implicações para o futuro da programação.</p>
+                        <div class="flex items-center space-x-4">
+                            <img src="https://via.placeholder.com/40" alt="Author" class="w-10 h-10 rounded-full">
+                            <div>
+                                <p class="font-medium">João Silva</p>
+                                <p class="text-sm text-gray-400">12 Jan 2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Posts Grid -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Últimos Artigos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Post Card 1 -->
+                    <article class="blog-card glass-card rounded-xl overflow-hidden">
+                        <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                        <div class="p-6 space-y-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="tag px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">Web Dev</span>
+                                <span class="text-gray-400 text-sm">3 min</span>
+                            </div>
+                            <h3 class="text-xl font-bold">O Futuro do React em 2024</h3>
+                            <p class="text-gray-400 line-clamp-3">Explorando as novidades e tendências do React para este ano, incluindo Server Components e outras features.</p>
+                        </div>
+                    </article>
+
+                    <!-- Post Card 2 -->
+                    <article class="blog-card glass-card rounded-xl overflow-hidden">
+                        <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                        <div class="p-6 space-y-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="tag px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-sm">Cloud</span>
+                                <span class="text-gray-400 text-sm">4 min</span>
+                            </div>
+                            <h3 class="text-xl font-bold">AWS vs Azure: Qual Escolher?</h3>
+                            <p class="text-gray-400 line-clamp-3">Uma análise comparativa entre os dois gigantes da computação em nuvem para ajudar na sua decisão.</p>
+                        </div>
+                    </article>
+
+                    <!-- Post Card 3 -->
+                    <article class="blog-card glass-card rounded-xl overflow-hidden">
+                        <img src="https://via.placeholder.com/400x250" alt="Post" class="w-full h-48 object-cover">
+                        <div class="p-6 space-y-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="tag px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-sm">Segurança</span>
+                                <span class="text-gray-400 text-sm">6 min</span>
+                            </div>
+                            <h3 class="text-xl font-bold">Cibersegurança em 2024</h3>
+                            <p class="text-gray-400 line-clamp-3">As principais ameaças e práticas de segurança que todo desenvolvedor precisa conhecer.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Categorias</h2>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#" class="tag px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20">
+                        <i class="fas fa-brain mr-2"></i>Inteligência Artificial
+                    </a>
+                    <a href="#" class="tag px-4 py-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20">
+                        <i class="fas fa-code mr-2"></i>Desenvolvimento Web
+                    </a>
+                    <a href="#" class="tag px-4 py-2 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20">
+                        <i class="fas fa-cloud mr-2"></i>Cloud Computing
+                    </a>
+                    <a href="#" class="tag px-4 py-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20">
+                        <i class="fas fa-shield-alt mr-2"></i>Cibersegurança
+                    </a>
+                    <a href="#" class="tag px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20">
+                        <i class="fas fa-mobile-alt mr-2"></i>Mobile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Newsletter -->
+            <div class="glass-card rounded-xl p-8 text-center">
+                <h2 class="text-2xl font-bold mb-2">Fique por dentro!</h2>
+                <p class="text-gray-400 mb-6">Receba as últimas novidades sobre tecnologia diretamente no seu email.</p>
+                <form class="flex max-w-md mx-auto">
+                    <input type="email" placeholder="Seu melhor email" 
+                        class="flex-1 px-4 py-2 rounded-l-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500">
+                    <button type="submit" 
+                        class="px-6 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 transition-colors">
+                        Inscrever
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="glass-card mt-12">
+            <div class="container mx-auto px-6 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-4 md:mb-0">
+                        <h3 class="text-xl font-bold text-blue-500">TechBlog</h3>
+                        <p class="text-gray-400 mt-2">Explorando o futuro da tecnologia</p>
+                    </div>
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-github"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                    <p>&copy; 2024 TechBlog. Todos os direitos reservados.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 40,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#3b82f6"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.3,
+                    "random": true
+                },
+                "size": {
+                    "value": 3,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#3b82f6",
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 1,
+                    "direction": "none",
+                    "random": true,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                }
+            },
+            "retina_detect": true
+        });
+    </script>
+</body>
+</html> 

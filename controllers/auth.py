@@ -1,9 +1,10 @@
 # controllers/auth.py
-from flask import request, jsonify
+from flask import request, jsonify, redirect, url_for, session, render_template
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from models.user import User
 from models import db
 from . import auth_bp
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -45,21 +46,11 @@ def register():
 
     return jsonify({"message": "Usuário registrado com sucesso."}), 201
 
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """
-    Autentica um usuário e gera um token JWT.
-
-    Requer um payload JSON com os parâmetros:
-      - username: nome de usuário
-      - password: senha do usuário
-
-    Retorna:
-      - JSON contendo o token de acesso ou mensagem de erro com o status HTTP correspondente.
-    """
     data = request.get_json()
     
-    # Verifica se os parâmetros necessários foram enviados
     if not data or not all(key in data for key in ['username', 'password']):
         return jsonify({"error": "Parâmetros obrigatórios ausentes."}), 400
 
@@ -70,9 +61,15 @@ def login():
     if user is None or not user.check_password(password):
         return jsonify({"error": "Usuário ou senha inválidos."}), 401
 
-    # Cria o token JWT usando o ID do usuário como identidade
     access_token = create_access_token(identity=user.id)
-    return jsonify({"access_token": access_token}), 200
+    session['user_id'] = user.id
+    session['username'] = user.username
+
+    # Em vez de redirecionar, retorne um JSON com a URL de redirecionamento
+    return jsonify({
+        "redirect_url": url_for('home')  # Certifique-se de que o endpoint da rota home é 'home'
+    }), 200
+
 
 @auth_bp.route('/protected', methods=['GET'])
 @jwt_required()

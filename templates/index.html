@@ -153,39 +153,32 @@
       "retina_detect": true
     });
     
-    // Captura o envio do formulário e envia os dados via fetch para o endpoint de login
     document.getElementById('loginForm').addEventListener('submit', async function(event) {
-      event.preventDefault();  // Evita o envio padrão do form
-      
-      // Pega os valores dos inputs
-      const username = document.getElementById('usuario').value;
-      const password = document.getElementById('senha').value;
-      
-      try {
-        // Faz a requisição para o endpoint /api/login (certifique-se de que o servidor está rodando e essa rota está implementada)
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
-        });
-  
-        const data = await response.json();
-  
-        if (response.ok) {
-          // Login bem-sucedido
-          alert('Login realizado com sucesso!\nToken: ' + data.access_token);
-          // Aqui você pode redirecionar para outra página ou salvar o token no localStorage, por exemplo.
-        } else {
-          // Ocorreu um erro no login
-          alert('Erro no login: ' + data.error);
-        }
-      } catch (error) {
-        console.error('Erro na requisição:', error);
-        alert('Ocorreu um erro ao tentar efetuar o login.');
+    event.preventDefault();  // Impede o envio padrão do formulário
+
+    const username = document.getElementById('usuario').value;
+    const password = document.getElementById('senha').value;
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Redireciona para a URL recebida no JSON
+        window.location.href = data.redirect_url;
+      } else {
+        alert('Erro no login: ' + data.error);
       }
-    });
+    } catch (error) {
+      console.error('Erro na requisição:', error);
+      alert('Ocorreu um erro ao tentar efetuar o login.');
+    }
+  });
   </script>
 </body>
 </html>

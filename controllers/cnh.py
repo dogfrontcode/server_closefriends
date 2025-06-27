@@ -153,6 +153,59 @@ def get_my_cnhs():
         logger.error(f"Erro ao listar CNHs - User ID: {session.get('user_id')}, Erro: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
+@cnh_bp.route('/details/<int:cnh_id>', methods=['GET'])
+@require_auth
+def get_cnh_details(cnh_id):
+    """
+    Endpoint para obter detalhes completos da CNH para exibição no modal.
+    """
+    try:
+        user_id = session['user_id']
+        
+        # Buscar CNH
+        cnh_request = CNHRequest.query.filter_by(
+            id=cnh_id, 
+            user_id=user_id
+        ).first()
+        
+        if not cnh_request:
+            return jsonify({'error': 'CNH não encontrada'}), 404
+        
+        # Converter para dict com todos os campos
+        cnh_data = cnh_request.to_dict()
+        
+        # Adicionar informações de status legível
+        status_map = {
+            'pending': 'Pendente',
+            'processing': 'Processando',
+            'completed': 'Concluída',
+            'failed': 'Falhou'
+        }
+        cnh_data['status_display'] = status_map.get(cnh_request.status, 'Desconhecido')
+        
+        # Verificar se pode baixar e se tem imagem
+        can_download = cnh_request.can_download()
+        cnh_data['can_download'] = can_download
+        
+        if can_download and cnh_request.generated_image_path:
+            # Gerar URL para visualização da imagem
+            cnh_data['image_url'] = f'/api/cnh/download/{cnh_id}'
+        else:
+            cnh_data['image_url'] = None
+        
+        # Log da visualização
+        logger.info(f"Detalhes CNH visualizados - User: {session.get('username')}, CNH ID: {cnh_id}")
+        
+        return jsonify({
+            'success': True,
+            'cnh': cnh_data
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar detalhes CNH - CNH ID: {cnh_id}, User ID: {session.get('user_id')}, Erro: {str(e)}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
+
 @cnh_bp.route('/download/<int:cnh_id>', methods=['GET'])
 @require_auth
 def download_cnh(cnh_id):

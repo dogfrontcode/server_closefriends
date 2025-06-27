@@ -18,14 +18,51 @@ class CNHRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # Dados pessoais
-    nome_completo = db.Column(db.String(100), nullable=False)
-    cpf = db.Column(db.String(14), nullable=False)  # Com formatação XXX.XXX.XXX-XX
-    rg = db.Column(db.String(20), nullable=False)
-    data_nascimento = db.Column(db.Date, nullable=False)
+    # Dados pessoais básicos (opcionais para testes)
+    nome_completo = db.Column(db.String(100))
+    cpf = db.Column(db.String(14))  # Com formatação XXX.XXX.XXX-XX
+    data_nascimento = db.Column(db.Date)
+    local_nascimento = db.Column(db.String(100))
+    uf_nascimento = db.Column(db.String(2))
+    nacionalidade = db.Column(db.String(50))
+    nome_pai = db.Column(db.String(100))
+    nome_mae = db.Column(db.String(100))
+    sexo_condutor = db.Column(db.String(1))  # M/F
+    
+    # Documento de identidade
+    doc_identidade_numero = db.Column(db.String(20))
+    doc_identidade_orgao = db.Column(db.String(10))
+    doc_identidade_uf = db.Column(db.String(2))
+    
+    # Datas da CNH
+    primeira_habilitacao = db.Column(db.Date)
+    data_emissao = db.Column(db.Date)
+    validade = db.Column(db.Date)
     
     # Configurações da CNH
-    categoria = db.Column(db.String(5), default='B', nullable=False)
+    categoria_habilitacao = db.Column(db.String(10), default='B')  # A, B, C, AB, etc.
+    acc = db.Column(db.String(3), default='NAO')  # SIM/NAO
+    uf_cnh = db.Column(db.String(2))
+    
+    # Números de controle
+    numero_registro = db.Column(db.String(20))
+    numero_espelho = db.Column(db.String(20))
+    codigo_validacao = db.Column(db.String(20))
+    numero_renach = db.Column(db.String(20))
+    
+    # Local da habilitação
+    local_municipio = db.Column(db.String(100))
+    local_uf = db.Column(db.String(2))
+    
+    # Categorias adicionais (JSON string)
+    categorias_adicionais = db.Column(db.Text)  # JSON das categorias com datas
+    
+    # Observações
+    observacoes = db.Column(db.Text)
+    
+    # Arquivos
+    foto_3x4_path = db.Column(db.String(255))
+    assinatura_path = db.Column(db.String(255))
     custo = db.Column(db.Float, default=5.0, nullable=False)
     
     # Controle do processo
@@ -60,7 +97,7 @@ class CNHRequest(db.Model):
     @staticmethod
     def validar_cpf(cpf):
         """
-        Valida formato e dígitos verificadores do CPF.
+        Valida formato e dígitos verificadores do CPF (opcional para testes).
         
         Args:
             cpf (str): CPF no formato XXX.XXX.XXX-XX ou apenas números
@@ -69,7 +106,7 @@ class CNHRequest(db.Model):
             tuple: (is_valid: bool, formatted_cpf: str, error_message: str)
         """
         if not cpf:
-            return False, "", "CPF é obrigatório"
+            return True, "", ""  # Opcional para testes
         
         # Remove caracteres não numéricos
         cpf_numbers = re.sub(r'[^0-9]', '', cpf)
@@ -104,38 +141,12 @@ class CNHRequest(db.Model):
         
         return True, cpf_formatado, ""
     
-    @staticmethod
-    def validar_rg(rg):
-        """
-        Valida formato do RG.
-        
-        Args:
-            rg (str): RG com ou sem formatação
-            
-        Returns:
-            tuple: (is_valid: bool, formatted_rg: str, error_message: str)
-        """
-        if not rg:
-            return False, "", "RG é obrigatório"
-        
-        # Remove espaços e converte para maiúsculo
-        rg_clean = rg.strip().upper()
-        
-        # Verifica se tem formato válido (números e opcionalmente uma letra no final)
-        if not re.match(r'^[0-9]{4,15}[A-Z]?$', re.sub(r'[.\-\s]', '', rg_clean)):
-            return False, "", "RG deve ter entre 4-15 números e opcionalmente uma letra"
-        
-        # Verifica tamanho mínimo
-        rg_numbers = re.sub(r'[^0-9A-Z]', '', rg_clean)
-        if len(rg_numbers) < 4:
-            return False, "", "RG muito curto"
-        
-        return True, rg_clean, ""
+    # Removido validar_rg - campo não existe mais
     
     @staticmethod
     def validar_nome(nome):
         """
-        Valida nome completo.
+        Valida nome completo (opcional para testes).
         
         Args:
             nome (str): Nome completo
@@ -144,7 +155,7 @@ class CNHRequest(db.Model):
             tuple: (is_valid: bool, formatted_name: str, error_message: str)
         """
         if not nome:
-            return False, "", "Nome é obrigatório"
+            return True, "", ""  # Opcional para testes
         
         nome_clean = nome.strip().title()
         
@@ -168,7 +179,7 @@ class CNHRequest(db.Model):
     @staticmethod
     def validar_data_nascimento(data_nasc):
         """
-        Valida data de nascimento e calcula idade.
+        Valida data de nascimento (opcional para testes).
         
         Args:
             data_nasc (date or str): Data de nascimento
@@ -177,7 +188,7 @@ class CNHRequest(db.Model):
             tuple: (is_valid: bool, date_obj: date, idade: int, error_message: str)
         """
         if not data_nasc:
-            return False, None, 0, "Data de nascimento é obrigatória"
+            return True, None, 0, ""  # Opcional para testes
         
         # Converte string para date se necessário
         if isinstance(data_nasc, str):
@@ -194,12 +205,7 @@ class CNHRequest(db.Model):
         if hoje.month < data_nasc.month or (hoje.month == data_nasc.month and hoje.day < data_nasc.day):
             idade -= 1
         
-        # Valida idade
-        if idade < CNHRequest.IDADE_MINIMA:
-            return False, data_nasc, idade, f"Idade mínima: {CNHRequest.IDADE_MINIMA} anos"
-        
-        if idade > CNHRequest.IDADE_MAXIMA:
-            return False, data_nasc, idade, f"Idade máxima: {CNHRequest.IDADE_MAXIMA} anos"
+        # Validações de idade removidas para testes
         
         # Verifica se data não é futura
         if data_nasc > hoje:
@@ -210,7 +216,7 @@ class CNHRequest(db.Model):
     @staticmethod
     def validar_categoria(categoria):
         """
-        Valida categoria da CNH.
+        Valida categoria da CNH (opcional para testes).
         
         Args:
             categoria (str): Categoria (A, B, C, etc.)
@@ -219,13 +225,11 @@ class CNHRequest(db.Model):
             tuple: (is_valid: bool, categoria: str, error_message: str)
         """
         if not categoria:
-            categoria = 'B'  # Padrão
+            return True, 'B', ""  # Padrão opcional
         
         categoria = categoria.upper().strip()
         
-        if categoria not in CNHRequest.CATEGORIAS_VALIDAS:
-            return False, categoria, f"Categoria inválida. Válidas: {', '.join(CNHRequest.CATEGORIAS_VALIDAS)}"
-        
+        # Para testes, aceita qualquer categoria
         return True, categoria, ""
     
     # ==================== MÉTODOS DE VALIDAÇÃO COMPLETA ====================
@@ -233,7 +237,7 @@ class CNHRequest(db.Model):
     @classmethod
     def validar_dados_completos(cls, dados):
         """
-        Valida todos os dados do formulário CNH.
+        Valida todos os dados do formulário CNH (campos opcionais para testes).
         
         Args:
             dados (dict): Dados do formulário
@@ -244,41 +248,51 @@ class CNHRequest(db.Model):
         validated_data = {}
         errors = {}
         
-        # Validar nome
-        nome_valido, nome_formatado, nome_erro = cls.validar_nome(dados.get('nome_completo'))
-        if nome_valido:
-            validated_data['nome_completo'] = nome_formatado
-        else:
-            errors['nome_completo'] = nome_erro
+        # Campos de texto simples (todos opcionais)
+        campos_texto = [
+            'nome_completo', 'local_nascimento', 'uf_nascimento', 'nacionalidade',
+            'nome_pai', 'nome_mae', 'doc_identidade_numero', 'doc_identidade_orgao',
+            'doc_identidade_uf', 'sexo_condutor', 'uf_cnh', 'numero_registro',
+            'numero_espelho', 'codigo_validacao', 'numero_renach', 'local_municipio',
+            'local_uf', 'categoria_habilitacao', 'acc', 'observacoes', 'categorias_adicionais'
+        ]
         
-        # Validar CPF
+        for campo in campos_texto:
+            valor = dados.get(campo)
+            if valor:
+                validated_data[campo] = valor.strip()
+        
+        # Validar CPF se fornecido
         cpf_valido, cpf_formatado, cpf_erro = cls.validar_cpf(dados.get('cpf'))
-        if cpf_valido:
+        if cpf_valido and cpf_formatado:
             validated_data['cpf'] = cpf_formatado
-        else:
+        elif not cpf_valido:
             errors['cpf'] = cpf_erro
         
-        # Validar RG
-        rg_valido, rg_formatado, rg_erro = cls.validar_rg(dados.get('rg'))
-        if rg_valido:
-            validated_data['rg'] = rg_formatado
-        else:
-            errors['rg'] = rg_erro
+        # Validar nome se fornecido
+        nome_valido, nome_formatado, nome_erro = cls.validar_nome(dados.get('nome_completo'))
+        if nome_valido and nome_formatado:
+            validated_data['nome_completo'] = nome_formatado
+        elif not nome_valido:
+            errors['nome_completo'] = nome_erro
         
-        # Validar data de nascimento
-        data_valida, data_obj, idade, data_erro = cls.validar_data_nascimento(dados.get('data_nascimento'))
-        if data_valida:
-            validated_data['data_nascimento'] = data_obj
-            validated_data['idade'] = idade
-        else:
-            errors['data_nascimento'] = data_erro
+        # Validar datas se fornecidas
+        campos_data = ['data_nascimento', 'primeira_habilitacao', 'data_emissao', 'validade']
+        for campo in campos_data:
+            data_str = dados.get(campo)
+            if data_str:
+                try:
+                    data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
+                    validated_data[campo] = data_obj
+                except ValueError:
+                    errors[campo] = f"Data inválida para {campo}"
         
-        # Validar categoria
-        cat_valida, categoria, cat_erro = cls.validar_categoria(dados.get('categoria'))
-        if cat_valida:
-            validated_data['categoria'] = categoria
-        else:
-            errors['categoria'] = cat_erro
+        # Validar categoria se fornecida
+        cat_valida, categoria, cat_erro = cls.validar_categoria(dados.get('categoria_habilitacao'))
+        if cat_valida and categoria:
+            validated_data['categoria_habilitacao'] = categoria
+        elif not cat_valida:
+            errors['categoria_habilitacao'] = cat_erro
         
         is_valid = len(errors) == 0
         return is_valid, validated_data, errors
@@ -343,23 +357,24 @@ class CNHRequest(db.Model):
             # Criar CNH request
             cnh_request = cls(
                 user_id=user_id,
-                nome_completo=dados_validados['nome_completo'],
-                cpf=dados_validados['cpf'],
-                rg=dados_validados['rg'],
-                data_nascimento=dados_validados['data_nascimento'],
-                categoria=dados_validados['categoria'],
                 custo=cls.CUSTO_PADRAO,
                 status=cls.STATUS_PENDING
             )
+            
+            # Adicionar todos os campos validados
+            for campo, valor in dados_validados.items():
+                if hasattr(cnh_request, campo):
+                    setattr(cnh_request, campo, valor)
             
             db.session.add(cnh_request)
             db.session.flush()  # Para obter o ID
             
             # Debitar créditos
+            nome_desc = dados_validados.get('nome_completo', 'Sem nome')
             user.debit_credits(
                 amount=cls.CUSTO_PADRAO,
                 transaction_type='cnh_generation',
-                description=f'Geração de CNH #{cnh_request.id} - {dados_validados["nome_completo"]}'
+                description=f'Geração de CNH #{cnh_request.id} - {nome_desc}'
             )
             
             db.session.commit()
@@ -478,8 +493,11 @@ class CNHRequest(db.Model):
         Calcula idade atual baseada na data de nascimento.
         
         Returns:
-            int: Idade em anos
+            int: Idade em anos ou 0 se não houver data
         """
+        if not self.data_nascimento:
+            return 0
+            
         hoje = date.today()
         idade = hoje.year - self.data_nascimento.year
         
@@ -497,11 +515,30 @@ class CNHRequest(db.Model):
         """
         return {
             'id': self.id,
-            'nome_completo': self.nome_completo,
-            'cpf': self.cpf,
-            'rg': self.rg,
+            'nome_completo': self.nome_completo or '',
+            'cpf': self.cpf or '',
             'data_nascimento': self.data_nascimento.isoformat() if self.data_nascimento else None,
-            'categoria': self.categoria,
+            'categoria_habilitacao': self.categoria_habilitacao or 'B',
+            'categoria': self.categoria_habilitacao or 'B',  # Compatibilidade com frontend
+            'numero_registro': self.numero_registro or '',
+            'numero_espelho': self.numero_espelho or '',
+            'uf_cnh': self.uf_cnh or 'SP',
+            'doc_identidade_numero': self.doc_identidade_numero or '',
+            'doc_identidade_orgao': self.doc_identidade_orgao or '',
+            'doc_identidade_uf': self.doc_identidade_uf or '',
+            'nacionalidade': self.nacionalidade or '',
+            'local_nascimento': self.local_nascimento or '',
+            'uf_nascimento': self.uf_nascimento or '',
+            'nome_pai': self.nome_pai or '',
+            'nome_mae': self.nome_mae or '',
+            'sexo_condutor': self.sexo_condutor or '',
+            'primeira_habilitacao': self.primeira_habilitacao.isoformat() if self.primeira_habilitacao else None,
+            'data_emissao': self.data_emissao.isoformat() if self.data_emissao else None,
+            'validade': self.validade.isoformat() if self.validade else None,
+            'acc': self.acc or 'NAO',
+            'local_municipio': self.local_municipio or '',
+            'local_uf': self.local_uf or '',
+            'observacoes': self.observacoes or '',
             'custo': self.custo,
             'status': self.status,
             'status_display': self.get_status_display(),
@@ -510,8 +547,7 @@ class CNHRequest(db.Model):
             'can_download': self.can_download(),
             'error_message': self.error_message,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'idade': self.get_idade()
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None
         }
     
     def __repr__(self):

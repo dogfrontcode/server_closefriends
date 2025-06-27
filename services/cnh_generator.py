@@ -202,10 +202,10 @@ class CNHImageGenerator:
         draw.text((text_x, text_y), photo_text, fill=self.TEXT_COLOR, font=self.small_font)
     
     def _draw_personal_data(self, draw, cnh_request):
-        """Desenha dados pessoais com layout melhorado."""
-        # Seção de dados pessoais
+        """Desenha dados pessoais com layout melhorado incluindo todos os novos campos."""
+        # Seção de dados pessoais (maior para acomodar mais campos)
         section_y = 120
-        section_height = 200
+        section_height = 280
         section_x = 30
         section_width = 550
         
@@ -224,39 +224,86 @@ class CNHImageGenerator:
         
         # Dados em duas colunas
         start_y = section_y + 50
-        line_height = 30
+        line_height = 25
         col1_x = section_x + 15
         col2_x = section_x + 280
         
-        # Coluna 1
-        self._draw_modern_field(draw, "NOME COMPLETO", cnh_request.nome_completo.upper(), 
+        # Coluna 1 - Dados principais
+        nome = cnh_request.nome_completo or "NÃO INFORMADO"
+        self._draw_modern_field(draw, "NOME COMPLETO", nome.upper(), 
                                col1_x, start_y, 250)
         
-        self._draw_modern_field(draw, "CPF", cnh_request.cpf, 
+        cpf = cnh_request.cpf or "NÃO INFORMADO"
+        self._draw_modern_field(draw, "CPF", cpf, 
                                col1_x, start_y + line_height, 120)
         
-        self._draw_modern_field(draw, "RG", cnh_request.rg, 
-                               col1_x, start_y + line_height * 2, 120)
+        # Documento de identidade
+        doc_numero = cnh_request.doc_identidade_numero or "NÃO INFORMADO"
+        doc_orgao = cnh_request.doc_identidade_orgao or "SSP"
+        doc_uf = cnh_request.doc_identidade_uf or "SP"
+        doc_completo = f"{doc_numero} {doc_orgao}/{doc_uf}"
+        self._draw_modern_field(draw, "IDENTIDADE", doc_completo, 
+                               col1_x, start_y + line_height * 2, 200)
         
-        # Coluna 2 (dados da direita)
-        data_nasc_formatada = cnh_request.data_nascimento.strftime("%d/%m/%Y")
-        idade = cnh_request.get_idade()
+        # Nacionalidade
+        nacionalidade = cnh_request.nacionalidade or "BRASILEIRO"
+        self._draw_modern_field(draw, "NACIONALIDADE", nacionalidade.upper(), 
+                               col1_x, start_y + line_height * 3, 150)
+        
+        # Sexo
+        sexo = cnh_request.sexo_condutor or "M"
+        sexo_descricao = "MASCULINO" if sexo == "M" else "FEMININO" if sexo == "F" else "NÃO INFORMADO"
+        self._draw_modern_field(draw, "SEXO", sexo_descricao, 
+                               col1_x, start_y + line_height * 4, 100)
+        
+        # Nome dos pais
+        nome_pai = cnh_request.nome_pai or "NÃO INFORMADO"
+        self._draw_modern_field(draw, "NOME DO PAI", nome_pai.upper() if nome_pai != "NÃO INFORMADO" else nome_pai, 
+                               col1_x, start_y + line_height * 5, 250)
+        
+        nome_mae = cnh_request.nome_mae or "NÃO INFORMADO"
+        self._draw_modern_field(draw, "NOME DA MÃE", nome_mae.upper() if nome_mae != "NÃO INFORMADO" else nome_mae, 
+                               col1_x, start_y + line_height * 6, 250)
+        
+        # Coluna 2 - Datas e local
+        if cnh_request.data_nascimento:
+            data_nasc_formatada = cnh_request.data_nascimento.strftime("%d/%m/%Y")
+            idade = cnh_request.get_idade()
+        else:
+            data_nasc_formatada = "NÃO INFORMADA"
+            idade = 0
         
         self._draw_modern_field(draw, "DATA NASCIMENTO", data_nasc_formatada, 
-                               col2_x, start_y + line_height, 100)
+                               col2_x, start_y, 100)
         
-        self._draw_modern_field(draw, "IDADE", f"{idade} anos", 
-                               col2_x, start_y + line_height * 2, 80)
+        self._draw_modern_field(draw, "IDADE", f"{idade} anos" if idade > 0 else "NÃO CALC.", 
+                               col2_x, start_y + line_height, 80)
+        
+        # Local de nascimento
+        local_nasc = cnh_request.local_nascimento or "NÃO INFORMADO"
+        uf_nasc = cnh_request.uf_nascimento or ""
+        local_completo = f"{local_nasc}/{uf_nasc}" if uf_nasc else local_nasc
+        self._draw_modern_field(draw, "LOCAL NASCIMENTO", local_completo.upper(), 
+                               col2_x, start_y + line_height * 2, 150)
+        
+        # Primeira habilitação
+        if cnh_request.primeira_habilitacao:
+            primeira_hab = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
+        else:
+            primeira_hab = "NÃO INFORMADA"
+        self._draw_modern_field(draw, "1ª HABILITAÇÃO", primeira_hab, 
+                               col2_x, start_y + line_height * 3, 120)
         
         # Categoria destacada
-        cat_y = start_y + line_height * 3.5
-        self._draw_category_highlight(draw, cnh_request.categoria, col1_x, cat_y)
+        categoria = cnh_request.categoria_habilitacao or "B"
+        cat_y = start_y + line_height * 7
+        self._draw_category_highlight(draw, categoria, col1_x, cat_y)
     
     def _draw_cnh_details(self, draw, cnh_request):
-        """Desenha detalhes específicos da CNH com layout moderno."""
-        # Seção de detalhes da CNH
-        section_y = 340
-        section_height = 120
+        """Desenha detalhes específicos da CNH com layout moderno incluindo novos campos."""
+        # Seção de detalhes da CNH (aumentada para novos campos)
+        section_y = 420
+        section_height = 160
         section_x = 30
         section_width = 550
         
@@ -275,36 +322,79 @@ class CNHImageGenerator:
         
         # Dados em layout moderno
         start_y = section_y + 50
+        line_height = 25
         col1_x = section_x + 15
-        col2_x = section_x + 200
+        col2_x = section_x + 190
         col3_x = section_x + 380
         
-        # Número da CNH (formatado)
-        numero_cnh = f"{cnh_request.id:011d}"
-        numero_formatado = f"{numero_cnh[:3]}.{numero_cnh[3:6]}.{numero_cnh[6:9]}-{numero_cnh[9:]}"
-        self._draw_modern_field(draw, "Nº REGISTRO", numero_formatado, col1_x, start_y, 150)
+        # Primeira linha - Números de controle
+        numero_registro = cnh_request.numero_registro or f"{cnh_request.id:011d}"
+        self._draw_modern_field(draw, "Nº REGISTRO", numero_registro, col1_x, start_y, 150)
         
-        # Data de emissão
-        data_emissao = cnh_request.created_at.strftime("%d/%m/%Y")
-        self._draw_modern_field(draw, "EMISSÃO", data_emissao, col2_x, start_y, 100)
+        numero_espelho = cnh_request.numero_espelho or f"{cnh_request.id:011d}"
+        self._draw_modern_field(draw, "Nº ESPELHO", numero_espelho, col2_x, start_y, 150)
         
-        # Data de validade (5 anos após emissão)
-        from datetime import timedelta
-        data_validade = (cnh_request.created_at + timedelta(days=365*5)).strftime("%d/%m/%Y")
-        self._draw_modern_field(draw, "VALIDADE", data_validade, col3_x, start_y, 100)
+        # RENACH
+        uf_cnh = cnh_request.uf_cnh or "SP"
+        numero_renach = cnh_request.numero_renach or f"{uf_cnh}{cnh_request.id:09d}"
+        self._draw_modern_field(draw, "RENACH", numero_renach, col3_x, start_y, 120)
         
-        # Segunda linha
-        start_y2 = start_y + 40
+        # Segunda linha - Datas
+        start_y2 = start_y + line_height
         
-        # Órgão emissor
-        self._draw_modern_field(draw, "ÓRGÃO EMISSOR", "DETRAN/SP", col1_x, start_y2, 150)
+        # Data de emissão (usar campo específico se disponível)
+        if cnh_request.data_emissao:
+            data_emissao = cnh_request.data_emissao.strftime("%d/%m/%Y")
+        else:
+            data_emissao = cnh_request.created_at.strftime("%d/%m/%Y")
+        self._draw_modern_field(draw, "EMISSÃO", data_emissao, col1_x, start_y2, 100)
+        
+        # Data de validade (usar campo específico se disponível)
+        if cnh_request.validade:
+            data_validade = cnh_request.validade.strftime("%d/%m/%Y")
+        else:
+            from datetime import timedelta
+            data_validade = (cnh_request.created_at + timedelta(days=365*5)).strftime("%d/%m/%Y")
+        self._draw_modern_field(draw, "VALIDADE", data_validade, col2_x, start_y2, 100)
+        
+        # UF da CNH
+        self._draw_modern_field(draw, "UF", uf_cnh, col3_x, start_y2, 50)
+        
+        # Terceira linha - Local e órgão
+        start_y3 = start_y2 + line_height
         
         # Local de emissão
-        self._draw_modern_field(draw, "LOCAL", "SÃO PAULO/SP", col2_x, start_y2, 150)
+        local_municipio = cnh_request.local_municipio or "SÃO PAULO"
+        local_uf = cnh_request.local_uf or uf_cnh
+        local_completo = f"{local_municipio}/{local_uf}"
+        self._draw_modern_field(draw, "LOCAL EMISSÃO", local_completo.upper(), col1_x, start_y3, 180)
+        
+        # Órgão emissor
+        orgao_emissor = f"DETRAN/{uf_cnh}"
+        self._draw_modern_field(draw, "ÓRGÃO EMISSOR", orgao_emissor, col2_x, start_y3, 120)
+        
+        # Código de validação
+        codigo_validacao = cnh_request.codigo_validacao or f"{cnh_request.id:010d}"
+        self._draw_modern_field(draw, "CÓD. VALIDAÇÃO", codigo_validacao, col3_x, start_y3, 120)
+        
+        # Quarta linha - ACC e observações
+        start_y4 = start_y3 + line_height
+        
+        # ACC (Categoria especial)
+        acc = cnh_request.acc or "NAO"
+        acc_text = "SIM" if acc == "SIM" else "NÃO"
+        self._draw_modern_field(draw, "ACC", acc_text, col1_x, start_y4, 80)
+        
+        # Observações (se houver)
+        if cnh_request.observacoes:
+            obs_resumida = cnh_request.observacoes[:30] + "..." if len(cnh_request.observacoes) > 30 else cnh_request.observacoes
+            self._draw_modern_field(draw, "OBSERVAÇÕES", obs_resumida.upper(), col2_x, start_y4, 200)
+        else:
+            self._draw_modern_field(draw, "OBSERVAÇÕES", "NENHUMA", col2_x, start_y4, 200)
     
     def _draw_footer(self, draw, cnh_request):
         """Desenha rodapé com informações adicionais e elementos de segurança."""
-        footer_y = self.IMAGE_HEIGHT - 70
+        footer_y = self.IMAGE_HEIGHT - 50
         
         # Fundo do rodapé
         draw.rectangle([0, footer_y - 5, self.IMAGE_WIDTH, self.IMAGE_HEIGHT], 

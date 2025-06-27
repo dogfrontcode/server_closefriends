@@ -4,6 +4,9 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from models.user import User
 from models import db
 from . import auth_bp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @auth_bp.route('/register', methods=['POST'])
@@ -64,11 +67,40 @@ def login():
     access_token = create_access_token(identity=user.id)
     session['user_id'] = user.id
     session['username'] = user.username
+    session.permanent = True  # Torna a sessão permanente (usa PERMANENT_SESSION_LIFETIME)
 
     # Em vez de redirecionar, retorne um JSON com a URL de redirecionamento
     return jsonify({
         "redirect_url": url_for('home')  # Certifique-se de que o endpoint da rota home é 'home'
     }), 200
+
+
+@auth_bp.route('/user/balance', methods=['GET'])
+def get_user_balance():
+    """
+    Retorna o saldo atual do usuário logado.
+    Usado para atualizar saldo sem reload da página.
+    """
+    if 'user_id' not in session:
+        return jsonify({'error': 'Não autenticado'}), 401
+    
+    try:
+        user = User.query.get(session['user_id'])
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        balance_info = user.get_credit_balance()
+        
+        return jsonify({
+            'success': True,
+            'balance': balance_info['balance'],
+            'formatted': f"R$ {balance_info['formatted']}".replace('.', ','),
+            'last_updated': balance_info['last_updated']
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar saldo do usuário: {str(e)}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 
 @auth_bp.route('/protected', methods=['GET'])

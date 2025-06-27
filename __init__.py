@@ -6,6 +6,12 @@ from models import db  # Aqui o Python procura pelo objeto 'db' dentro do pacote
 from flask_jwt_extended import JWTManager
 from controllers import auth_bp
 from controllers.credits import credits_bp
+from controllers.cnh import cnh_bp
+
+# Importar todos os modelos para garantir que sejam registrados
+from models.user import User
+from models.credit_transaction import CreditTransaction
+from models.cnh_request import CNHRequest
 
 # Configurar logging
 logging.basicConfig(
@@ -22,6 +28,13 @@ def create_app():
     # Gera uma chave JWT segura dinamicamente a cada inicialização.
     app.config['JWT_SECRET_KEY'] = secrets.token_hex(32)
     app.config['SECRET_KEY'] = secrets.token_hex(16)
+    
+    # Configurações de sessão para manter login por 1 hora
+    from datetime import timedelta
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+    app.config['SESSION_COOKIE_SECURE'] = False  # True apenas em HTTPS
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Proteção XSS
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção CSRF
 
     db.init_app(app)
     JWTManager(app)
@@ -29,6 +42,7 @@ def create_app():
     # Registrar blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(credits_bp)
+    app.register_blueprint(cnh_bp)
 
     with app.app_context():
         db.create_all()

@@ -46,7 +46,7 @@ class CNHRequest(db.Model):
     
     CATEGORIAS_VALIDAS = ['A', 'B', 'C', 'D', 'E', 'AB', 'AC', 'AD', 'AE']
     CUSTO_PADRAO = 5.0
-    MAX_CNH_POR_DIA = 5
+    MAX_CNH_POR_DIA = 999  # Sem limite prático
     IDADE_MINIMA = 18
     IDADE_MAXIMA = 80
     

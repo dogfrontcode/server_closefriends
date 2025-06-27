@@ -3,23 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
+    <title>Sistema CNH - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         #particles-js {
-            position: absolute;
+            position: fixed;
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
             z-index: 1;
-        }
-
-        .content-wrapper {
-            position: relative;
-            z-index: 2;
         }
 
         .bg-gradient {
@@ -29,272 +24,493 @@
         }
 
         @keyframes gradientAnimation {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        .glass-card {
-            background: rgba(17, 24, 39, 0.7);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
+        /* Sidebar Styles */
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white !important;
         }
-
-        .glass-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+        
+        .sidebar-item.active i {
+            color: white !important;
         }
-
-        .menu-item {
-            transition: all 0.3s ease;
+        
+        .sidebar-item.active span {
+            color: white !important;
         }
-
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(5px);
+        
+        .section-content {
+            display: none;
         }
-
-        .balance-card {
-            background: linear-gradient(45deg, #0ea5e9, #2563eb);
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
+        
+        .section-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
         }
-
-        .balance-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transform: rotate(45deg);
-            animation: cardShine 3s infinite;
+        
+        /* Sidebar collapse states */
+        #sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 256px;
+            transition: width 0.3s ease-in-out;
+            z-index: 30;
+            overflow-x: hidden;
         }
-
-        @keyframes cardShine {
-            0% {
-                transform: translateX(-100%) rotate(45deg);
-            }
-            100% {
-                transform: translateX(100%) rotate(45deg);
-            }
+        
+        #sidebar.collapsed {
+            width: 80px;
         }
-
-        .profile-dropdown {
+        
+        #sidebar.collapsed .sidebar-text {
             opacity: 0;
-            transform: translateY(-10px);
+            visibility: hidden;
+            white-space: nowrap;
+        }
+        
+        /* Collapse button - minimalista */
+        .collapse-btn {
+            flex-shrink: 0;
+            transition: all 0.3s ease-in-out;
+            background: transparent !important;
+            border: none !important;
+            padding: 8px !important;
+            min-width: auto;
+            width: auto;
+        }
+        
+        .collapse-btn:hover {
+            background: rgba(0,0,0,0.05) !important;
+            border-radius: 6px;
+        }
+        
+        #sidebar.collapsed .collapse-btn {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            right: auto;
+            z-index: 10;
+            background: transparent !important;
+            border: none !important;
+            padding: 12px !important;
+        }
+        
+        #sidebar.collapsed .collapse-btn:hover {
+            background: rgba(0,0,0,0.1) !important;
+            transform: translateX(-50%) scale(1.1);
+        }
+        
+        #sidebar.collapsed .collapse-btn #collapseIcon {
+            color: #6b7280 !important;
+            font-size: 16px;
+        }
+        
+        #sidebar.collapsed .collapse-btn:hover #collapseIcon {
+            color: #374151 !important;
+        }
+        
+        /* Logo desaparece quando colapsado */
+        #sidebar.collapsed .logo-container {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        /* Header minimalista quando colapsado */
+        #sidebar.collapsed .sidebar-header {
+            padding: 1rem 0.5rem;
+            border-bottom: none;
+        }
+        
+        #sidebar.collapsed .user-info-card {
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #sidebar.collapsed .sidebar-item {
+            justify-content: center;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        
+        #sidebar.collapsed .sidebar-item span {
+            display: none;
+        }
+        
+        .main-content {
+            margin-left: 256px;
+            transition: margin-left 0.3s ease-in-out;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+        }
+        
+        .main-content.collapsed {
+            margin-left: 80px;
+        }
+        
+        .sidebar-text {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+        }
+        
+        /* Responsive sidebar */
+        @media (max-width: 1024px) {
+            #sidebar {
+                transform: translateX(-100%);
+                width: 256px !important;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #sidebar.collapsed {
+                width: 256px !important;
+            }
+            
+            #sidebar.collapsed .sidebar-text {
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            
+            #sidebar.collapsed .user-info-card {
+                opacity: 1 !important;
+                visibility: visible !important;
+                height: auto !important;
+                margin: 1rem !important;
+                padding: 1rem !important;
+            }
+            
+            #sidebar.collapsed .sidebar-item {
+                justify-content: flex-start !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            
+            #sidebar.collapsed .sidebar-item span {
+                display: inline !important;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+            }
+            
+            .main-content.collapsed {
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Status styles */
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .status-success {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+        }
+        
+        .status-error {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+        }
+        
+        .status-processing {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: white;
+        }
+
+        #generationStatus {
             visibility: hidden;
             transition: all 0.3s ease;
+            z-index: 50;
         }
-
-        .profile-trigger:hover .profile-dropdown {
-            opacity: 1;
-            transform: translateY(0);
-            visibility: visible;
+        
+        /* Prevent layout shifts and overflow issues */
+        body {
+            overflow-x: hidden;
+        }
+        
+        .flex {
+            position: relative;
+        }
+        
+        /* Ensure proper stacking context */
+        #particles-js {
+            pointer-events: none;
         }
     </style>
 </head>
-<body class="min-h-screen bg-gradient overflow-hidden">
+<body class="min-h-screen bg-gradient overflow-x-hidden overflow-y-auto">
     <div id="particles-js"></div>
     
-    <div class="content-wrapper min-h-screen">
-        <!-- Header -->
-        <header class="glass-card p-4">
-            <div class="container mx-auto">
+    <div class="flex min-h-screen relative z-10">
+        <!-- Sidebar -->
+        <div id="sidebar" class="bg-white shadow-xl">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header p-6 border-b border-gray-200">
                 <div class="flex items-center justify-between">
-                    <!-- Logo -->
-                    <div class="text-white text-2xl font-bold">
-                        Logo
-                    </div>
-
-                    <!-- User Info & Balance -->
-                    <div class="flex items-center space-x-6">
-                        <!-- Balance Card -->
-                        <div class="balance-card rounded-lg p-3 relative group">
-                            <div class="flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
-                                    <i class="fas fa-wallet text-white text-sm"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs text-white/70">Saldo Disponível</p>
-                                        <button onclick="toggleBalance()" class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <i id="eyeIcon" class="fas fa-eye text-white/60 hover:text-white text-xs transition-colors"></i>
-                                        </button>
-                                    </div>
-                                    <div class="flex items-baseline gap-1 mt-0.5">
-                                        <span class="text-xs text-white/60">R$</span>
-                                        <p id="balanceAmount" class="text-lg font-bold text-white">{{ user_credits.formatted if user_credits else '0,00' }}</p>
-                                        <p id="balanceHidden" class="text-lg font-bold text-white hidden">••••••</p>
-                                        <span class="text-xs text-emerald-400 ml-1">
-                                            {% if user_credits and user_credits.balance > 0 %}+{{ user_credits.balance }}{% endif %}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="logo-container flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-id-card text-white text-lg"></i>
                         </div>
-
-                        <!-- User Profile -->
-                        <div class="profile-trigger relative">
-                            <div class="flex items-center space-x-3 cursor-pointer">
-                                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-white font-medium">{{ username or 'Usuário' }}</p>
-                                    <p class="text-white/60 text-sm">Premium</p>
-                                </div>
-                                <i class="fas fa-chevron-down text-white/60"></i>
-                            </div>
-
-                            <!-- Dropdown Menu -->
-                            <div class="profile-dropdown absolute right-0 mt-2 w-48 glass-card rounded-xl">
-                                <div class="py-2">
-                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
-                                        <i class="fas fa-user-circle mr-2"></i> Perfil
-                                    </a>
-                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
-                                        <i class="fas fa-cog mr-2"></i> Configurações
-                                    </a>
-                                    <a href="#" class="menu-item block px-4 py-2 text-white hover:text-white/90">
-                                        <i class="fas fa-sign-out-alt mr-2"></i> Sair
-                                    </a>
-                                </div>
-                            </div>
+                        <div class="sidebar-text">
+                            <h1 class="text-xl font-bold text-gray-800">Sistema CNH</h1>
+                            <p class="text-sm text-gray-500">Beta Lab</p>
                         </div>
                     </div>
+                    <!-- Collapse Button - Minimalista -->
+                    <button onclick="toggleSidebarCollapse()" 
+                            class="collapse-btn"
+                            title="Colapsar sidebar">
+                        <i id="collapseIcon" class="fas fa-chevron-left text-gray-600 text-sm"></i>
+                    </button>
                 </div>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="container mx-auto p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Quick Actions -->
-                <div class="glass-card rounded-xl p-6 space-y-4">
-                    <h2 class="text-xl font-bold text-white">Ações Rápidas</h2>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
-                            <i class="fas fa-exchange-alt mb-2"></i>
-                            <p>Transferir</p>
+            
+            <!-- User Info Card -->
+            <div class="user-info-card p-4 m-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">{{ username }}</p>
+                        <p class="text-xs text-gray-500">Usuário Premium</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-white rounded-lg">
+                    <span class="text-xs text-gray-600">Saldo Disponível:</span>
+                    <span class="credit-value text-sm font-bold text-green-600">{{ user_credits.formatted }}</span>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="px-4 pb-4">
+                <ul class="space-y-2">
+                    <!-- Dashboard -->
+                    <li>
+                        <a href="#" onclick="showDashboard()" class="sidebar-item active flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-blue-50 group">
+                            <i class="fas fa-home w-5 h-5 text-blue-500 group-hover:text-blue-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Gerar CNH -->
+                    <li>
+                        <a href="#" onclick="showCNHSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-green-50 group">
+                            <i class="fas fa-plus-circle w-5 h-5 text-green-500 group-hover:text-green-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Gerar CNH</span>
+                        </a>
+                    </li>
+                    
+                    <!-- CNHs Salvas -->
+                    <li>
+                        <a href="#" onclick="showMyCNHsSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-purple-50 group">
+                            <i class="fas fa-id-card w-5 h-5 text-purple-500 group-hover:text-purple-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">CNHs Salvas</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Divider -->
+                    <li class="my-4 sidebar-text">
+                        <hr class="border-gray-200">
+                    </li>
+                    
+                    <!-- Créditos -->
+                    <li>
+                        <a href="#" onclick="showCreditsSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-yellow-50 group">
+                            <i class="fas fa-coins w-5 h-5 text-yellow-500 group-hover:text-yellow-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Créditos</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Extrato -->
+                    <li>
+                        <a href="#" onclick="showExtractSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-indigo-50 group">
+                            <i class="fas fa-file-invoice w-5 h-5 text-indigo-500 group-hover:text-indigo-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Extrato</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Perfil -->
+                    <li>
+                        <a href="#" onclick="showProfileSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-gray-50 group">
+                            <i class="fas fa-user-cog w-5 h-5 text-gray-500 group-hover:text-gray-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Perfil</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Logout Button -->
+            <div class="absolute bottom-4 left-4 right-4">
+                <button onclick="logout()" class="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded-lg transition-all duration-200 hover:bg-red-100 group">
+                    <i class="fas fa-sign-out-alt w-5 h-5"></i>
+                    <span class="sidebar-text ml-2 font-medium">Sair</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="flex-1 min-h-screen main-content">
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button id="sidebarToggle" class="p-2 rounded-lg hover:bg-gray-100 lg:hidden">
+                            <i class="fas fa-bars text-gray-600"></i>
                         </button>
-                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
-                            <i class="fas fa-qrcode mb-2"></i>
-                            <p>Pix</p>
+                        <h2 id="pageTitle" class="text-xl font-semibold text-gray-800">Dashboard</h2>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <button class="p-2 rounded-lg hover:bg-gray-100 relative">
+                            <i class="fas fa-bell text-gray-600"></i>
+                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
                         </button>
-                        <button class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
-                            <i class="fas fa-file-invoice-dollar mb-2"></i>
-                            <p>Pagar</p>
-                        </button>
-                        <button onclick="showCNHSection()" class="menu-item p-4 rounded-lg bg-white/5 text-white text-center">
-                            <i class="fas fa-id-card mb-2"></i>
-                            <p>Gerar CNH</p>
+                        
+                        <!-- Quick CNH Button -->
+                        <button onclick="showCNHSection()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200">
+                            <i class="fas fa-magic mr-2"></i>
+                            Gerar CNH
                         </button>
                     </div>
                 </div>
-
-                <!-- Recent Transactions -->
-                <div class="glass-card rounded-xl p-6">
-                    <h2 class="text-xl font-bold text-white mb-4">Transações Recentes</h2>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                                    <i class="fas fa-arrow-down text-green-500"></i>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="p-6 bg-gray-50 min-h-screen">
+                <!-- Dashboard Content -->
+                <div id="dashboardSection" class="section-content active">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Total CNHs -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-blue-100 rounded-lg">
+                                    <i class="fas fa-id-card text-blue-600 text-xl"></i>
                                 </div>
-                                <div>
-                                    <p class="text-white">Recebido de Maria</p>
-                                    <p class="text-white/60 text-sm">Hoje, 14:30</p>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Total CNHs</p>
+                                    <p id="totalCNHs" class="text-2xl font-bold text-gray-900">0</p>
                                 </div>
                             </div>
-                            <p class="text-green-500 font-medium">+ R$ 150,00</p>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                                    <i class="fas fa-arrow-up text-red-500"></i>
+                        
+                        <!-- CNHs Hoje -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-green-100 rounded-lg">
+                                    <i class="fas fa-calendar-day text-green-600 text-xl"></i>
                                 </div>
-                                <div>
-                                    <p class="text-white">Pagamento Netflix</p>
-                                    <p class="text-white/60 text-sm">Ontem, 09:15</p>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">CNHs Hoje</p>
+                                    <p id="todayCNHs" class="text-2xl font-bold text-gray-900">0</p>
                                 </div>
                             </div>
-                            <p class="text-red-500 font-medium">- R$ 39,90</p>
+                        </div>
+                        
+                        <!-- Saldo -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-yellow-100 rounded-lg">
+                                    <i class="fas fa-coins text-yellow-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Saldo</p>
+                                    <p id="currentBalance" class="text-2xl font-bold text-gray-900">{{ user_credits.formatted }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- CNHs Completas -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-purple-100 rounded-lg">
+                                    <i class="fas fa-check-circle text-purple-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Completas</p>
+                                    <p id="completedCNHs" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Atividade Recente</h3>
+                        </div>
+                        <div class="p-6">
+                            <div id="recentActivity" class="space-y-4">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-history text-4xl mb-3 opacity-50"></i>
+                                    <p>Carregando atividades...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Upcoming Bills -->
-                <div class="glass-card rounded-xl p-6">
-                    <h2 class="text-xl font-bold text-white mb-4">Próximas Faturas</h2>
-                    <div class="space-y-4">
-                        <div class="p-4 bg-white/5 rounded-lg">
-                            <div class="flex justify-between items-center mb-2">
-                                <p class="text-white">Cartão de Crédito</p>
-                                <p class="text-white font-medium">R$ 1.250,00</p>
-                            </div>
-                            <div class="w-full bg-white/10 rounded-full h-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: 70%"></div>
-                            </div>
-                            <p class="text-white/60 text-sm mt-2">Vence em 5 dias</p>
-                        </div>
-                        <div class="p-4 bg-white/5 rounded-lg">
-                            <div class="flex justify-between items-center mb-2">
-                                <p class="text-white">Internet</p>
-                                <p class="text-white font-medium">R$ 99,90</p>
-                            </div>
-                            <div class="w-full bg-white/10 rounded-full h-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: 30%"></div>
-                            </div>
-                            <p class="text-white/60 text-sm mt-2">Vence em 15 dias</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CNH Management Section -->
-                <div id="cnhSection" class="hidden mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- CNH Generator -->
-                    <div class="glass-card rounded-xl p-6">
-                        <h2 class="text-xl font-bold text-white mb-4">
-                            <i class="fas fa-id-card mr-2"></i>
+                <!-- CNH Generation Section -->
+                <div id="cnhSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                            <i class="fas fa-magic mr-2"></i>
                             Gerar Nova CNH
-                        </h2>
-                        <form id="cnhForm" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        </h3>
+                        
+                        <form id="cnhForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label class="block text-white/80 text-sm mb-2">Nome Completo</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
                                     <input type="text" id="nomeCompleto" name="nome_completo" required
-                                           class="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:outline-none">
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 </div>
                                 <div>
-                                    <label class="block text-white/80 text-sm mb-2">CPF</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">CPF</label>
                                     <input type="text" id="cpf" name="cpf" required placeholder="000.000.000-00"
-                                           class="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:outline-none">
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 </div>
                                 <div>
-                                    <label class="block text-white/80 text-sm mb-2">RG</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">RG</label>
                                     <input type="text" id="rg" name="rg" required
-                                           class="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:outline-none">
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 </div>
                                 <div>
-                                    <label class="block text-white/80 text-sm mb-2">Data de Nascimento</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Data de Nascimento</label>
                                     <input type="date" id="dataNascimento" name="data_nascimento" required
-                                           class="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-400 focus:outline-none">
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 </div>
                                 <div>
-                                    <label class="block text-white/80 text-sm mb-2">Categoria</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                                     <select id="categoria" name="categoria"
-                                            class="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-400 focus:outline-none">
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         <option value="B" selected>B - Carro</option>
                                         <option value="A">A - Moto</option>
                                         <option value="C">C - Caminhão</option>
@@ -308,83 +524,105 @@
                                 </div>
                             </div>
                             
-                            <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="text-white font-medium">Custo da CNH</p>
-                                        <p class="text-white/60 text-sm">Será debitado do seu saldo</p>
+                                        <p class="text-blue-800 font-medium">Custo da CNH</p>
+                                        <p class="text-blue-600 text-sm">Será debitado do seu saldo</p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="text-2xl font-bold text-blue-400">R$ 5,00</p>
-                                        <p class="text-white/60 text-sm">Saldo: R$ {{ user_credits.formatted if user_credits else '0,00' }}</p>
+                                        <p class="text-2xl font-bold text-blue-800">R$ 5,00</p>
+                                        <p class="text-blue-600 text-sm">Saldo: R$ {{ user_credits.formatted }}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <button type="submit" id="generateCNHBtn" 
-                                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+                                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300">
                                 <i class="fas fa-magic mr-2"></i>
                                 Gerar CNH por R$ 5,00
                             </button>
                         </form>
 
                         <!-- Generation Status -->
-                        <div id="generationStatus" class="hidden mt-4 p-4 rounded-lg">
+                        <div id="generationStatus" class="mt-4 p-4 rounded-lg">
                             <div class="flex items-center space-x-3">
                                 <div id="statusIcon" class="w-8 h-8 rounded-full flex items-center justify-center">
                                     <i class="fas fa-spinner fa-spin text-white"></i>
                                 </div>
                                 <div>
-                                    <p id="statusText" class="text-white font-medium">Processando...</p>
-                                    <p id="statusDetail" class="text-white/60 text-sm">Gerando sua CNH...</p>
+                                    <p id="statusText" class="font-medium">Processando...</p>
+                                    <p id="statusDetail" class="text-sm">Gerando sua CNH...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- My CNHs -->
-                    <div class="glass-card rounded-xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-bold text-white">
-                                <i class="fas fa-list mr-2"></i>
-                                Minhas CNHs
-                            </h2>
-                            <button onclick="loadMyCNHs()" class="text-blue-400 hover:text-blue-300 transition-colors">
-                                <i class="fas fa-refresh"></i>
-                            </button>
-                        </div>
-                        
-                        <div id="cnhsList" class="space-y-3">
-                            <div class="text-center py-8 text-white/60">
-                                <i class="fas fa-id-card text-4xl mb-3 opacity-50"></i>
-                                <p>Carregando suas CNHs...</p>
+                </div>
+                
+                <!-- Minhas CNHs Section -->
+                <div id="myCNHsSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900">Minhas CNHs</h3>
+                                <button onclick="loadMyCNHs()" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-refresh"></i>
+                                </button>
                             </div>
                         </div>
-
-                        <!-- Quick Stats -->
-                        <div class="mt-6 grid grid-cols-3 gap-4">
-                            <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p id="totalCNHs" class="text-2xl font-bold text-blue-400">-</p>
-                                <p class="text-white/60 text-xs">Total</p>
-                            </div>
-                            <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p id="completedCNHs" class="text-2xl font-bold text-green-400">-</p>
-                                <p class="text-white/60 text-xs">Concluídas</p>
-                            </div>
-                            <div class="bg-white/5 rounded-lg p-3 text-center">
-                                <p id="todayCNHs" class="text-2xl font-bold text-yellow-400">-</p>
-                                <p class="text-white/60 text-xs">Hoje</p>
+                        <div class="p-6">
+                            <div id="cnhList">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-id-card text-4xl mb-3 opacity-50"></i>
+                                    <p>Carregando suas CNHs...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
+                
+                <!-- Credits Section -->
+                <div id="creditsSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Gerenciar Créditos</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600">Sistema de créditos em desenvolvimento...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Extract Section -->
+                <div id="extractSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Extrato de Transações</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600">Extrato de transações em desenvolvimento...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile Section -->
+                <div id="profileSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Meu Perfil</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600">Configurações de perfil em desenvolvimento...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script>
-        particlesJS('particles-js',
-        {
+        // Particles.js configuration
+        particlesJS('particles-js', {
             "particles": {
                 "number": {
                     "value": 80,
@@ -441,50 +679,149 @@
             "retina_detect": true
         });
 
-        // Balance visibility toggle
-        function toggleBalance() {
-            const balanceAmount = document.getElementById('balanceAmount');
-            const balanceHidden = document.getElementById('balanceHidden');
-            const eyeIcon = document.getElementById('eyeIcon');
-
-            if (balanceAmount.classList.contains('hidden')) {
-                balanceAmount.classList.remove('hidden');
-                balanceHidden.classList.add('hidden');
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
-            } else {
-                balanceAmount.classList.add('hidden');
-                balanceHidden.classList.remove('hidden');
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
+        // Sidebar Management
+        function showSection(sectionId, title, element = null) {
+            console.log(`🔄 Mostrando seção: ${sectionId}`);
+            
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all sidebar items
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // Update page title
+            document.getElementById('pageTitle').textContent = title;
+            
+            // Add active class to clicked sidebar item
+            if (element) {
+                element.classList.add('active');
+            } else if (event && event.target) {
+                event.target.closest('.sidebar-item').classList.add('active');
             }
         }
-
-        // CNH Section Management
+        
+        function showDashboard() {
+            showSection('dashboardSection', 'Dashboard', document.querySelector('a[onclick="showDashboard()"]'));
+            updateDashboardStats();
+        }
+        
         function showCNHSection() {
-            console.log('🆔 Abrindo seção CNH...');
-            const cnhSection = document.getElementById('cnhSection');
-            if (cnhSection.classList.contains('hidden')) {
-                cnhSection.classList.remove('hidden');
-                cnhSection.scrollIntoView({ behavior: 'smooth' });
-                console.log('📋 Carregando CNHs do usuário...');
-                loadMyCNHs(); // Load user's CNHs when section opens
-            } else {
-                cnhSection.classList.add('hidden');
+            showSection('cnhSection', 'Gerar CNH', document.querySelector('a[onclick="showCNHSection()"]'));
+        }
+        
+        function showMyCNHsSection() {
+            showSection('myCNHsSection', 'Minhas CNHs', document.querySelector('a[onclick="showMyCNHsSection()"]'));
+            loadMyCNHs();
+        }
+        
+        function showCreditsSection() {
+            showSection('creditsSection', 'Créditos', document.querySelector('a[onclick="showCreditsSection()"]'));
+        }
+        
+        function showExtractSection() {
+            showSection('extractSection', 'Extrato', document.querySelector('a[onclick="showExtractSection()"]'));
+        }
+        
+        function showProfileSection() {
+            showSection('profileSection', 'Perfil', document.querySelector('a[onclick="showProfileSection()"]'));
+        }
+        
+        // Update dashboard statistics
+        async function updateDashboardStats() {
+            try {
+                const response = await fetch('/api/cnh/stats', {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const stats = data.stats;
+                    
+                    document.getElementById('totalCNHs').textContent = stats.total || 0;
+                    document.getElementById('todayCNHs').textContent = stats.today || 0;
+                    document.getElementById('completedCNHs').textContent = stats.completed || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
             }
         }
-
-        // CPF Formatting
-        function formatCPF(value) {
-            return value
-                .replace(/\D/g, '')
-                .replace(/(\d{3})(\d)/, '$1.$2')
-                .replace(/(\d{3})(\d)/, '$1.$2')
-                .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-                .replace(/(-\d{2})\d+?$/, '$1');
+        
+        // Logout function
+        function logout() {
+            if (confirm('Tem certeza que deseja sair?')) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                }).then(() => {
+                    window.location.href = '/';
+                }).catch(() => {
+                    window.location.href = '/';
+                });
+            }
+        }
+        
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+        
+        // Sidebar collapse/expand toggle
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const collapseIcon = document.getElementById('collapseIcon');
+            const collapseBtn = document.querySelector('.collapse-btn');
+            
+            console.log('🔄 Toggling sidebar collapse');
+            
+            // Force remove any conflicting classes first
+            sidebar.classList.remove('open');
+            
+            // Toggle collapsed state
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                // Expanding: colapsado → expandido
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('collapsed');
+                collapseIcon.classList.remove('fa-chevron-right');
+                collapseIcon.classList.add('fa-chevron-left');
+                collapseBtn.setAttribute('title', 'Colapsar sidebar');
+                console.log('📖 Sidebar expandido (← seta para colapsar)');
+            } else {
+                // Collapsing: expandido → colapsado  
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('collapsed');
+                collapseIcon.classList.remove('fa-chevron-left');
+                collapseIcon.classList.add('fa-chevron-right');
+                collapseBtn.setAttribute('title', 'Expandir sidebar');
+                console.log('📋 Sidebar colapsado (→ seta para expandir)');
+            }
+            
+            // Force repaint to ensure smooth transition
+            sidebar.offsetHeight;
         }
 
-        // Form validation
+        // CNH Form functions
+        function formatCPF(cpf) {
+            cpf = cpf.replace(/\D/g, '');
+            cpf = cpf.replace(/(\d{3})(\d)/, '$1.$2');
+            cpf = cpf.replace(/(\d{3})(\d)/, '$1.$2');
+            cpf = cpf.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            return cpf;
+        }
+
         function validateCNHForm(formData) {
             const errors = [];
             
@@ -515,35 +852,27 @@
             return errors;
         }
 
-        // Show generation status
         function showGenerationStatus(type, title, message) {
-            const statusDiv = document.getElementById('generationStatus');
+            const statusElement = document.getElementById('generationStatus');
             const statusIcon = document.getElementById('statusIcon');
             const statusText = document.getElementById('statusText');
             const statusDetail = document.getElementById('statusDetail');
             
-            statusDiv.classList.remove('hidden', 'bg-green-500/10', 'bg-red-500/10', 'bg-blue-500/10');
-            
-            switch(type) {
-                case 'processing':
-                    statusDiv.classList.add('bg-blue-500/10');
-                    statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-400"></i>';
-                    break;
-                case 'success':
-                    statusDiv.classList.add('bg-green-500/10');
-                    statusIcon.innerHTML = '<i class="fas fa-check text-green-400"></i>';
-                    break;
-                case 'error':
-                    statusDiv.classList.add('bg-red-500/10');
-                    statusIcon.innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i>';
-                    break;
-            }
+            statusElement.className = `status-indicator status-${type}`;
+            statusElement.style.visibility = 'visible';
             
             statusText.textContent = title;
             statusDetail.textContent = message;
+            
+            if (type === 'processing') {
+                statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            } else if (type === 'success') {
+                statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+            } else if (type === 'error') {
+                statusIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+            }
         }
 
-        // Generate CNH
         async function generateCNH(formData) {
             try {
                 const response = await fetch('/api/cnh/generate', {
@@ -572,9 +901,9 @@
                 console.log('🔄 Carregando CNHs...');
                 const response = await fetch('/api/cnh/my-cnhs', {
                     method: 'GET',
-                    credentials: 'same-origin', // Inclui cookies de sessão
+                    credentials: 'same-origin',
                     headers: {
-                        'Cache-Control': 'no-cache' // Force refresh
+                        'Cache-Control': 'no-cache'
                     }
                 });
                 
@@ -588,7 +917,6 @@
                     console.log(`✅ Carregadas ${result.cnhs.length} CNHs`);
                 } else {
                     console.error('❌ Erro ao carregar CNHs:', result.error);
-                    // Tentar recarregar página se não autenticado
                     if (response.status === 401) {
                         console.log('🔒 Não autenticado, redirecionando...');
                         window.location.href = '/';
@@ -599,78 +927,63 @@
             }
         }
 
-        // Display CNHs in the list
         function displayCNHs(cnhs) {
-            const cnhsList = document.getElementById('cnhsList');
+            const cnhList = document.getElementById('cnhList');
             
             if (!cnhs || cnhs.length === 0) {
-                cnhsList.innerHTML = `
-                    <div class="text-center py-8 text-white/60">
+                cnhList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
                         <i class="fas fa-id-card text-4xl mb-3 opacity-50"></i>
-                        <p>Você ainda não gerou nenhuma CNH</p>
-                        <p class="text-sm mt-1">Preencha o formulário ao lado para começar</p>
+                        <p>Nenhuma CNH encontrada</p>
+                        <button onclick="showCNHSection()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            Gerar primeira CNH
+                        </button>
                     </div>
                 `;
                 return;
             }
             
-            cnhsList.innerHTML = cnhs.map(cnh => `
-                <div class="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
+            cnhList.innerHTML = cnhs.map(cnh => `
+                <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                    <i class="fas fa-id-card text-blue-400"></i>
-                                </div>
-                                <div>
-                                    <p class="text-white font-medium">${cnh.nome_completo}</p>
-                                    <p class="text-white/60 text-sm">CPF: ${cnh.cpf} • Cat: ${cnh.categoria}</p>
-                                </div>
-                            </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900">${cnh.nome_completo}</h4>
+                            <p class="text-sm text-gray-600">CPF: ${cnh.cpf} | Categoria: ${cnh.categoria}</p>
+                            <p class="text-xs text-gray-500">Criada em: ${new Date(cnh.created_at).toLocaleDateString('pt-BR')}</p>
                         </div>
                         <div class="text-right">
-                            <div class="flex items-center space-x-2">
-                                <span class="px-2 py-1 text-xs rounded-full ${getStatusClass(cnh.status)}">
-                                    ${cnh.status_display}
-                                </span>
-                                ${cnh.can_download ? `
-                                    <button onclick="downloadCNH('${cnh.id}')" 
-                                            class="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
-                                        <i class="fas fa-download text-sm"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <p class="text-white/40 text-xs mt-1">
-                                ${new Date(cnh.created_at).toLocaleDateString('pt-BR')}
-                            </p>
+                            <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full ${getStatusClass(cnh.status)}">
+                                ${cnh.status_display}
+                            </span>
+                            ${cnh.can_download ? `
+                                <button onclick="downloadCNH(${cnh.id})" class="ml-2 px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Get CSS class for status
         function getStatusClass(status) {
-            switch(status) {
-                case 'completed':
-                    return 'bg-green-500/20 text-green-400';
-                case 'processing':
-                    return 'bg-blue-500/20 text-blue-400';
-                case 'failed':
-                    return 'bg-red-500/20 text-red-400';
-                default:
-                    return 'bg-yellow-500/20 text-yellow-400';
+            switch (status) {
+                case 'completed': return 'bg-green-100 text-green-800';
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'processing': return 'bg-blue-100 text-blue-800';
+                case 'failed': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
             }
         }
 
-        // Update CNH statistics
         function updateCNHStats(stats) {
-            document.getElementById('totalCNHs').textContent = stats.total || 0;
-            document.getElementById('completedCNHs').textContent = stats.completed || 0;
-            document.getElementById('todayCNHs').textContent = stats.today || 0;
+            if (stats) {
+                document.getElementById('totalCNHs').textContent = stats.total || 0;
+                document.getElementById('completedCNHs').textContent = stats.completed || 0;
+                document.getElementById('todayCNHs').textContent = stats.today || 0;
+            }
         }
 
-        // Download CNH
         function downloadCNH(cnhId) {
             window.open(`/api/cnh/download/${cnhId}`, '_blank');
         }
@@ -685,11 +998,12 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const balanceElement = document.querySelector('.credit-value');
-                    if (balanceElement) {
-                        balanceElement.textContent = data.formatted || 'R$ 0,00';
-                        console.log(`💰 Saldo atualizado: ${data.formatted}`);
-                    }
+                    const balanceElements = document.querySelectorAll('.credit-value');
+                    balanceElements.forEach(element => {
+                        element.textContent = data.formatted || 'R$ 0,00';
+                    });
+                    document.getElementById('currentBalance').textContent = data.formatted || 'R$ 0,00';
+                    console.log(`💰 Saldo atualizado: ${data.formatted}`);
                 } else {
                     console.log('⚠️ Não foi possível atualizar saldo, mas continuando...');
                 }
@@ -698,18 +1012,17 @@
             }
         }
 
-        // Auto-refresh CNHs periodically (mais suave)
+        // Auto-refresh CNHs periodically
         function startAutoRefresh() {
             console.log('🔄 Iniciando auto-refresh de CNHs...');
             
-            // Refresh every 15 seconds if CNH section is visible (reduzido frequência)
             setInterval(() => {
-                const cnhSection = document.getElementById('cnhSection');
-                if (cnhSection && !cnhSection.classList.contains('hidden')) {
+                const myCNHsSection = document.getElementById('myCNHsSection');
+                if (myCNHsSection && myCNHsSection.classList.contains('active')) {
                     console.log('🔄 Auto-refresh CNHs...');
                     loadMyCNHs();
                 }
-            }, 15000); // Aumentado de 10s para 15s
+            }, 15000);
         }
 
         // Initialize when page loads
@@ -718,6 +1031,15 @@
             
             // Start auto-refresh
             startAutoRefresh();
+            
+            // Show dashboard by default
+            showDashboard();
+            
+            // Sidebar toggle for mobile
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
             
             // CPF input formatting
             const cpfInput = document.getElementById('cpf');
@@ -758,74 +1080,74 @@
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Gerar CNH por R$ 5,00';
                     
-                                         if (result.success) {
-                         showGenerationStatus('success', 'CNH Gerada!', 
-                             `CNH #${result.data.cnh.id} criada com sucesso. Aguardando processamento...`);
-                         
-                         // Clear form
-                         cnhForm.reset();
-                         
-                         // Immediate reload to show new CNH
-                         loadMyCNHs();
-                         
-                         // Setup polling for status updates
-                         const cnhId = result.data.cnh.id;
-                         console.log(`🔄 Iniciando polling para CNH #${cnhId}`);
-                         
-                         const pollInterval = setInterval(async () => {
-                             console.log(`📡 Polling CNH #${cnhId}...`);
-                             
-                             // Reload list
-                             await loadMyCNHs();
-                             
-                             // Check if CNH is completed
-                             try {
-                                 const statusResponse = await fetch(`/api/cnh/status/${cnhId}`, {
-                                     credentials: 'same-origin'
-                                 });
-                                 
-                                 if (statusResponse.ok) {
-                                     const statusData = await statusResponse.json();
-                                     const cnh = statusData.cnh;
-                                     
-                                     console.log(`📊 CNH #${cnhId} status:`, cnh.status);
-                                     
-                                     if (cnh.status === 'completed') {
-                                         console.log(`✅ CNH #${cnhId} completa!`);
-                                         clearInterval(pollInterval);
-                                         
-                                         // Final reload da lista e atualizar saldo
-                                         await loadMyCNHs();
-                                         await updateUserBalance();
-                                         
-                                         // Hide status after success
-                                         setTimeout(() => {
-                                             document.getElementById('generationStatus').classList.add('hidden');
-                                         }, 3000);
-                                         
-                                     } else if (cnh.status === 'failed') {
-                                         console.log(`❌ CNH #${cnhId} falhou:`, cnh.error_message);
-                                         clearInterval(pollInterval);
-                                         showGenerationStatus('error', 'Falha na geração', cnh.error_message || 'Erro desconhecido');
-                                     }
-                                 }
-                             } catch (pollError) {
-                                 console.error('❌ Erro no polling:', pollError);
-                             }
-                         }, 2000); // Poll every 2 seconds
-                         
-                         // Stop polling after 20 seconds (sistema tem timeout de 15s)
-                         setTimeout(() => {
-                             console.log('⏰ Timeout do polling - sistema deve ter processado automaticamente');
-                             clearInterval(pollInterval);
-                             
-                             // Força uma última verificação
-                             loadMyCNHs();
-                         }, 20000);
-                         
-                     } else {
-                         showGenerationStatus('error', 'Erro na geração', result.error);
-                     }
+                    if (result.success) {
+                        showGenerationStatus('success', 'CNH Gerada!', 
+                            `CNH #${result.data.cnh.id} criada com sucesso. Aguardando processamento...`);
+                        
+                        // Clear form
+                        cnhForm.reset();
+                        
+                        // Immediate reload to show new CNH
+                        loadMyCNHs();
+                        
+                        // Setup polling for status updates
+                        const cnhId = result.data.cnh.id;
+                        console.log(`🔄 Iniciando polling para CNH #${cnhId}`);
+                        
+                        const pollInterval = setInterval(async () => {
+                            console.log(`📡 Polling CNH #${cnhId}...`);
+                            
+                            // Reload list
+                            await loadMyCNHs();
+                            
+                            // Check if CNH is completed
+                            try {
+                                const statusResponse = await fetch(`/api/cnh/status/${cnhId}`, {
+                                    credentials: 'same-origin'
+                                });
+                                
+                                if (statusResponse.ok) {
+                                    const statusData = await statusResponse.json();
+                                    const cnh = statusData.cnh;
+                                    
+                                    console.log(`📊 CNH #${cnhId} status:`, cnh.status);
+                                    
+                                    if (cnh.status === 'completed') {
+                                        console.log(`✅ CNH #${cnhId} completa!`);
+                                        clearInterval(pollInterval);
+                                        
+                                        // Final reload da lista e atualizar saldo
+                                        await loadMyCNHs();
+                                        await updateUserBalance();
+                                        
+                                        // Hide status after success
+                                        setTimeout(() => {
+                                            document.getElementById('generationStatus').style.visibility = 'hidden';
+                                        }, 3000);
+                                        
+                                    } else if (cnh.status === 'failed') {
+                                        console.log(`❌ CNH #${cnhId} falhou:`, cnh.error_message);
+                                        clearInterval(pollInterval);
+                                        showGenerationStatus('error', 'Falha na geração', cnh.error_message || 'Erro desconhecido');
+                                    }
+                                }
+                            } catch (pollError) {
+                                console.error('❌ Erro no polling:', pollError);
+                            }
+                        }, 2000); // Poll every 2 seconds
+                        
+                        // Stop polling after 20 seconds
+                        setTimeout(() => {
+                            console.log('⏰ Timeout do polling - sistema deve ter processado automaticamente');
+                            clearInterval(pollInterval);
+                            
+                            // Força uma última verificação
+                            loadMyCNHs();
+                        }, 20000);
+                        
+                    } else {
+                        showGenerationStatus('error', 'Erro na geração', result.error);
+                    }
                 });
             }
         });

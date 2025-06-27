@@ -114,3 +114,24 @@ def protected():
     """
     current_user_id = get_jwt_identity()
     return jsonify({"message": f"Bem-vindo! Seu ID de usuário é {current_user_id}."}), 200
+
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    """
+    Logout que limpa sessão.
+    """
+    try:
+        user_id = session.get('user_id')
+        session.clear()
+        
+        logger.info(f"Logout realizado - User ID: {user_id}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Logout realizado com sucesso"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro no logout: {str(e)}")
+        return jsonify({'error': 'Erro interno'}), 500

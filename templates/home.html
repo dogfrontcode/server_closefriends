@@ -271,10 +271,16 @@
         <div id="sidebar" class="bg-white shadow-xl">
             <!-- Sidebar Header -->
             <div class="sidebar-header p-6 border-b border-gray-200">
-    <div class="content-wrapper min-h-screen overflow-x-hidden overflow-y-auto">
-        <!-- Header -->
-        <header class="relative z-20 glass-card p-4">
-            <div class="container mx-auto">
+                <div class="flex items-center justify-between">
+                    <div class="logo-container flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-id-card text-white text-lg"></i>
+                        </div>
+                        <div class="sidebar-text">
+                            <h1 class="text-xl font-bold text-gray-800">Sistema CNH</h1>
+                            <p class="text-sm text-gray-500">Beta Lab</p>
+                        </div>
+                    </div>
                     <!-- Collapse Button - Minimalista -->
                     <button onclick="toggleSidebarCollapse()" 
                             class="collapse-btn"

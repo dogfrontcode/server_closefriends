@@ -95,6 +95,7 @@
             transform: translateY(-10px);
             visibility: hidden;
             transition: all 0.3s ease;
+            z-index: 50;
         }
 
         .profile-trigger:hover .profile-dropdown {
@@ -107,9 +108,9 @@
 <body class="min-h-screen bg-gradient overflow-hidden">
     <div id="particles-js"></div>
     
-    <div class="content-wrapper min-h-screen">
+    <div class="content-wrapper min-h-screen overflow-x-hidden overflow-y-auto">
         <!-- Header -->
-        <header class="glass-card p-4">
+        <header class="relative z-20 glass-card p-4">
             <div class="container mx-auto">
                 <div class="flex items-center justify-between">
                     <!-- Logo -->

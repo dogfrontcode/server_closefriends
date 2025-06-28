@@ -69,17 +69,17 @@ def create_pix_payment():
             logger.error(f"Erro ao criar recarga PIX: {response.error_message}")
             return jsonify({'error': response.error_message}), 500
         
-        # Salvar transação pendente no banco
-        pending_transaction = CreditTransaction(
+        # Salvar transação pendente no banco usando método correto
+        pending_transaction = CreditTransaction.create_transaction(
             user_id=user.id,
-            amount=amount,
+            amount=0,  # Valor 0 para transação pendente (não afeta saldo ainda)
             transaction_type='pix_pending',
             description=f'PIX R$ {amount:.2f} - Aguardando pagamento',
-            reference_id=response.transaction_id,
-            created_at=datetime.utcnow()
+            balance_before=user.credits,
+            balance_after=user.credits,  # Saldo não muda para pendente
+            reference_id=response.transaction_id
         )
         
-        db.session.add(pending_transaction)
         db.session.commit()
         
         # Mapear resposta para o frontend

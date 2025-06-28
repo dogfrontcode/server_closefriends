@@ -23,6 +23,9 @@ class CreditTransaction(db.Model):
     balance_before = db.Column(db.Float, nullable=False)  # Saldo antes da transação
     balance_after = db.Column(db.Float, nullable=False)   # Saldo após a transação
     
+    # PIX/Pagamento - Campo adicionado para suportar referências externas
+    reference_id = db.Column(db.String(100), nullable=True, index=True)  # ID externo (PIX, cartão, etc.)
+    
     # Metadados
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     ip_address = db.Column(db.String(45))  # IPv4/IPv6
@@ -37,6 +40,9 @@ class CreditTransaction(db.Model):
     
     # ==================== TIPOS DE TRANSAÇÃO ====================
     TRANSACTION_TYPES = {
+        'pix_pending': 'PIX - Aguardando Pagamento',
+        'pix_confirmed': 'PIX - Pagamento Confirmado', 
+        'pix_failed': 'PIX - Pagamento Falhou',
         'pix_recharge': 'Recarga via PIX',
         'cnh_generation': 'Geração de CNH',
         'email_service': 'Serviço de Email',
@@ -45,14 +51,15 @@ class CreditTransaction(db.Model):
         'bonus': 'Bônus',
         'refund': 'Reembolso',
         'penalty': 'Penalidade',
-        'welcome_bonus': 'Bônus de Boas-Vindas'
+        'welcome_bonus': 'Bônus de Boas-Vindas',
+        'manual_add': 'Adição Manual'
     }
     
     # ==================== MÉTODOS ESTÁTICOS ====================
     
     @staticmethod
     def create_transaction(user_id, amount, transaction_type, description=None, 
-                         balance_before=0, balance_after=0, ip_address=None, user_agent=None):
+                         balance_before=0, balance_after=0, ip_address=None, user_agent=None, reference_id=None):
         """
         Cria uma nova transação de crédito de forma padronizada.
         
@@ -65,6 +72,7 @@ class CreditTransaction(db.Model):
             balance_after (float): Saldo após a transação
             ip_address (str, optional): IP do usuário
             user_agent (str, optional): User agent do navegador
+            reference_id (str, optional): ID de referência externa (PIX, etc.)
             
         Returns:
             CreditTransaction: Objeto da transação criada
@@ -78,7 +86,8 @@ class CreditTransaction(db.Model):
                 balance_before=balance_before,
                 balance_after=balance_after,
                 ip_address=ip_address,
-                user_agent=user_agent
+                user_agent=user_agent,
+                reference_id=reference_id
             )
             
             db.session.add(transaction)
@@ -183,7 +192,8 @@ class CreditTransaction(db.Model):
             'date_formatted': self.created_at.strftime('%d/%m/%Y %H:%M'),
             'status': self.status,
             'is_credit': self.amount > 0,
-            'is_debit': self.amount < 0
+            'is_debit': self.amount < 0,
+            'reference_id': self.reference_id
         }
     
     def reverse_transaction(self, reason="Transação revertida"):

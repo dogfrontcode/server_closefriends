@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager
 from controllers import auth_bp
 from controllers.credits import credits_bp
 from controllers.cnh import cnh_bp
+from controllers.pix_payment import pix_bp  # Importar blueprint PIX
 
 # Importar todos os modelos para garantir que sejam registrados
 from models.user import User
@@ -43,6 +44,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(credits_bp)
     app.register_blueprint(cnh_bp)
+    app.register_blueprint(pix_bp)  # Registrar blueprint PIX
 
     with app.app_context():
         db.create_all()

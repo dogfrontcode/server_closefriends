@@ -110,7 +110,7 @@ def get_my_cnhs():
         
         # Parâmetros de paginação
         page = request.args.get('page', 1, type=int)
-        per_page = min(request.args.get('per_page', 10, type=int), 50)  # Máximo 50
+        per_page = min(request.args.get('per_page', 20, type=int), 50)  # Padrão 20, máximo 50
         status_filter = request.args.get('status')
         
         # Query base

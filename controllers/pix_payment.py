@@ -4,6 +4,7 @@ from models.user import User
 from models.credit_transaction import CreditTransaction
 from models import db
 import logging
+import requests
 from datetime import datetime
 
 # Importar o novo serviço modular
@@ -15,6 +16,13 @@ logger = logging.getLogger(__name__)
 # Blueprint para rotas de pagamento PIX
 pix_bp = Blueprint('pix', __name__, url_prefix='/api/pix')
 
+# Configurações da Flucsus
+FLUCSUS_CONFIG = {
+    'public_key': 'galinhada_aktclpxexbzghhx1',
+    'secret_key': '4fq962d1pgzdfomyoy7exrifu8kmom73o16yrco5sj4p0zti8gizrj4xk6zivwue',
+    'api_url': 'https://app.flucsus.com.br/api/v1'
+}
+
 # ==================== MIDDLEWARE DE AUTENTICAÇÃO ====================
 
 def require_auth():
@@ -22,6 +30,75 @@ def require_auth():
     if 'user_id' not in session:
         return jsonify({'error': 'Usuário não autenticado'}), 401
     return None
+
+# ==================== FUNÇÃO DE CONSULTA FLUCSUS ====================
+
+def check_payment_status_flucsus(transaction_id):
+    """
+    Verifica o status de um pagamento diretamente na API da Flucsus
+    
+    Args:
+        transaction_id (str): ID da transação na Flucsus
+        
+    Returns:
+        dict: Dados do status do pagamento
+    """
+    try:
+        logger.info(f"🔍 Verificando status do pagamento na Flucsus: {transaction_id}")
+        
+        # Consultar diretamente a API da Flucsus
+        flucsus_response = requests.get(
+            f"{FLUCSUS_CONFIG['api_url']}/gateway/transactions?id={transaction_id}",
+            headers={
+                'x-public-key': FLUCSUS_CONFIG['public_key'],
+                'x-secret-key': FLUCSUS_CONFIG['secret_key'],
+                'Content-Type': 'application/json'
+            },
+            timeout=10
+        )
+        
+        if flucsus_response.status_code == 200:
+            flucsus_data = flucsus_response.json()
+            logger.info(f"📊 Status da Flucsus: {flucsus_data.get('status', 'UNKNOWN')}")
+            
+            # Verificar se foi pago
+            is_completed = flucsus_data.get('status') == 'COMPLETED'
+            
+            return {
+                'success': True,
+                'transaction_id': transaction_id,
+                'status': flucsus_data.get('status', 'PENDING'),
+                'is_paid': is_completed,
+                'is_completed': is_completed,
+                'flucsus_status': flucsus_data.get('status'),
+                'payed_at': flucsus_data.get('payedAt'),
+                'amount': flucsus_data.get('amount'),
+                'source': 'flucsus_api',
+                'message': 'Pagamento confirmado na Flucsus' if is_completed else 'Pagamento ainda pendente',
+                'raw_data': flucsus_data
+            }
+        else:
+            logger.error(f"❌ Erro na consulta Flucsus: {flucsus_response.status_code}")
+            return {
+                'success': False,
+                'error': f'Erro na consulta Flucsus: {flucsus_response.status_code}',
+                'source': 'flucsus_api'
+            }
+            
+    except requests.exceptions.Timeout:
+        logger.error("❌ Timeout ao consultar Flucsus")
+        return {
+            'success': False,
+            'error': 'Timeout ao consultar Flucsus',
+            'source': 'flucsus_api'
+        }
+    except Exception as e:
+        logger.error(f"❌ Erro ao consultar Flucsus: {str(e)}")
+        return {
+            'success': False,
+            'error': f'Erro ao consultar Flucsus: {str(e)}',
+            'source': 'flucsus_api'
+        }
 
 # ==================== ENDPOINTS DE PAGAMENTO PIX ====================
 
@@ -72,7 +149,7 @@ def create_pix_payment():
         # Salvar transação pendente no banco usando método correto
         pending_transaction = CreditTransaction.create_transaction(
             user_id=user.id,
-            amount=0,  # Valor 0 para transação pendente (não afeta saldo ainda)
+            amount=amount,  # Manter valor real para referência
             transaction_type='pix_pending',
             description=f'PIX R$ {amount:.2f} - Aguardando pagamento',
             balance_before=user.credits,
@@ -147,7 +224,7 @@ def get_available_amounts():
 @pix_bp.route('/check-payment/<payment_id>', methods=['GET'])
 def check_payment_status(payment_id):
     """
-    Verifica o status de um pagamento PIX
+    Verifica o status de um pagamento PIX consultando DIRETAMENTE a Flucsus
     
     Args:
         payment_id (str): ID do pagamento
@@ -165,7 +242,7 @@ def check_payment_status(payment_id):
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
-        # Buscar transação pendente
+        # Buscar transação pendente no banco local
         pending_transaction = CreditTransaction.query.filter_by(
             user_id=user.id,
             reference_id=payment_id
@@ -174,18 +251,80 @@ def check_payment_status(payment_id):
         if not pending_transaction:
             return jsonify({'error': 'Pagamento não encontrado'}), 404
         
-        # Determinar status baseado no tipo de transação
-        is_paid = pending_transaction.transaction_type == 'pix_confirmed'
-        status = 'COMPLETED' if is_paid else 'PENDING'
+        # 🚀 CONSULTAR DIRETAMENTE A FLUCSUS PRIMEIRO
+        flucsus_result = check_payment_status_flucsus(payment_id)
         
-        return jsonify({
-            'success': True,
-            'status': status,
-            'payment_id': payment_id,
-            'isPaid': is_paid,
-            'amount': pending_transaction.amount,
-            'transaction_type': pending_transaction.transaction_type
-        }), 200
+        if flucsus_result['success']:
+            # Se conseguiu consultar a Flucsus
+            if flucsus_result['is_completed'] and pending_transaction.transaction_type == 'pix_pending':
+                # Pagamento foi confirmado na Flucsus, vamos processar localmente
+                logger.info(f"✅ Pagamento confirmado na Flucsus, processando: {payment_id}")
+                
+                # Adicionar créditos ao usuário
+                amount = pending_transaction.amount
+                old_balance = user.credits
+                user.credits += amount
+                
+                # Criar nova transação de confirmação
+                confirmed_transaction = CreditTransaction.create_transaction(
+                    user_id=user.id,
+                    amount=amount,
+                    transaction_type='pix_confirmed',
+                    description=f'PIX R$ {amount:.2f} - Pagamento confirmado',
+                    balance_before=old_balance,
+                    balance_after=user.credits,
+                    reference_id=payment_id
+                )
+                
+                # Atualizar transação pendente para confirmada
+                pending_transaction.transaction_type = 'pix_confirmed'
+                pending_transaction.description = f'PIX R$ {amount:.2f} - Pagamento confirmado'
+                
+                db.session.commit()
+                
+                logger.info(f'💰 Créditos adicionados - User: {user.username}, Valor: R$ {amount:.2f}, Novo saldo: R$ {user.credits:.2f}')
+            
+            # ✅ PRIORIZAR STATUS LOCAL SE JÁ FOI CONFIRMADO
+            is_locally_confirmed = pending_transaction.transaction_type == 'pix_confirmed'
+            final_is_paid = flucsus_result['is_completed'] or is_locally_confirmed
+            final_status = 'COMPLETED' if final_is_paid else 'PENDING'
+            
+            # Determinar a fonte mais confiável
+            source = 'flucsus_api' if flucsus_result['is_completed'] else ('local_confirmed' if is_locally_confirmed else 'flucsus_api')
+            message = flucsus_result.get('message')
+            if is_locally_confirmed and not flucsus_result['is_completed']:
+                message = 'Pagamento confirmado localmente via webhook'
+            
+            return jsonify({
+                'success': True,
+                'status': final_status,
+                'payment_id': payment_id,
+                'isPaid': final_is_paid,
+                'amount': pending_transaction.amount,
+                'transaction_type': pending_transaction.transaction_type,
+                'source': source,
+                'flucsus_status': flucsus_result.get('flucsus_status'),
+                'payed_at': flucsus_result.get('payed_at'),
+                'message': message
+            }), 200
+        else:
+            # ⚠️ FALLBACK: Se Flucsus falhar, usar status local
+            logger.warning(f"❌ Falha ao consultar Flucsus, usando fallback local: {flucsus_result.get('error')}")
+            
+            is_paid = pending_transaction.transaction_type == 'pix_confirmed'
+            status = 'COMPLETED' if is_paid else 'PENDING'
+            
+            return jsonify({
+                'success': True,
+                'status': status,
+                'payment_id': payment_id,
+                'isPaid': is_paid,
+                'amount': pending_transaction.amount,
+                'transaction_type': pending_transaction.transaction_type,
+                'source': 'local_fallback',
+                'flucsus_error': flucsus_result.get('error'),
+                'message': 'Status obtido do banco local (Flucsus indisponível)'
+            }), 200
         
     except Exception as e:
         logger.error(f"Erro ao verificar status do pagamento: {str(e)}")
@@ -228,10 +367,18 @@ def confirm_payment():
             
             # Adicionar créditos
             amount = pending_transaction.amount
-            user.add_credits(
+            old_balance = user.credits
+            user.credits += amount
+            
+            # Criar nova transação de confirmação
+            confirmed_transaction = CreditTransaction.create_transaction(
+                user_id=user.id,
                 amount=amount,
                 transaction_type='pix_confirmed',
-                description=f'PIX R$ {amount:.2f} - Pagamento confirmado'
+                description=f'PIX R$ {amount:.2f} - Pagamento confirmado',
+                balance_before=old_balance,
+                balance_after=user.credits,
+                reference_id=payment_id
             )
             
             # Atualizar transação pendente
@@ -269,24 +416,97 @@ def confirm_payment():
 @pix_bp.route('/webhook', methods=['POST'])
 def webhook_payment():
     """
-    Webhook para receber notificações do gateway de pagamento Flucsus
+    🔔 Webhook para receber notificações do gateway de pagamento Flucsus
+    
+    Baseado no padrão fornecido em Node.js
     """
     try:
+        # Obter dados do webhook
         data = request.get_json()
-        logger.info(f"Webhook Flucsus recebido: {data}")
+        headers = dict(request.headers)
         
-        # Aqui você processará os dados do webhook da Flucsus
-        # e chamará confirm_payment() internamente
+        logger.info('🔔 Webhook de pagamento recebido')
+        logger.info(f'📋 Headers: {headers}')
+        logger.info(f'📦 Body: {data}')
         
-        # Exemplo de processamento:
-        # transaction_id = data.get('transactionId')
-        # status = data.get('status')
-        # 
-        # if transaction_id and status:
-        #     confirm_payment_internal(transaction_id, status)
+        # Log detalhado do payload
+        logger.info(f'💳 Payload do webhook: {data}')
         
-        return jsonify({'success': True}), 200
+        # Verificar se é o evento TRANSACTION_PAID
+        if data and data.get('event') == 'TRANSACTION_PAID':
+            logger.info('✅ Pagamento confirmado recebido!')
+            
+            transaction_data = data.get('transaction', {})
+            client_data = data.get('client', {})
+            order_items = data.get('orderItems', [])
+            
+            transaction_id = transaction_data.get('id')
+            client_id = client_data.get('id')
+            
+            if transaction_id:
+                logger.info(f'💰 Processando pagamento {transaction_id}')
+                logger.info(f'👤 Cliente: {client_data.get("name")} ({client_data.get("email")})')
+                
+                if order_items:
+                    product_names = [item.get('product', {}).get('name', 'N/A') for item in order_items]
+                    logger.info(f'🛍️ Produtos: {", ".join(product_names)}')
+                
+                # Buscar transação pendente no banco
+                pending_transaction = CreditTransaction.query.filter_by(
+                    reference_id=transaction_id,
+                    transaction_type='pix_pending'
+                ).first()
+                
+                if pending_transaction:
+                    # Buscar usuário
+                    user = User.query.get(pending_transaction.user_id)
+                    if user:
+                        # Adicionar créditos
+                        amount = pending_transaction.amount
+                        old_balance = user.credits
+                        user.credits += amount
+                        
+                        # Criar nova transação de confirmação
+                        confirmed_transaction = CreditTransaction.create_transaction(
+                            user_id=user.id,
+                            amount=amount,
+                            transaction_type='pix_confirmed',
+                            description=f'PIX R$ {amount:.2f} - Pagamento confirmado (webhook)',
+                            balance_before=old_balance,
+                            balance_after=user.credits,
+                            reference_id=transaction_id
+                        )
+                        
+                        # Atualizar transação pendente
+                        pending_transaction.transaction_type = 'pix_confirmed'
+                        pending_transaction.description = f'PIX R$ {amount:.2f} - Pagamento confirmado (webhook)'
+                        
+                        db.session.commit()
+                        
+                        logger.info(f'💰 Pagamento {transaction_id} processado com sucesso')
+                        logger.info(f'💳 Créditos adicionados: R$ {amount:.2f}')
+                        logger.info(f'📊 Novo saldo: R$ {user.credits:.2f}')
+                    else:
+                        logger.error(f'❌ Usuário não encontrado para transação {transaction_id}')
+                else:
+                    logger.warning(f'⚠️ Transação pendente não encontrada: {transaction_id}')
+            else:
+                logger.warning('⚠️ Transaction ID não encontrado no webhook')
+        else:
+            event_type = data.get('event', 'UNKNOWN') if data else 'NO_DATA'
+            logger.info(f'📝 Evento ignorado: {event_type}')
+        
+        # Responder com sucesso (importante para o gateway não reenviar)
+        return jsonify({
+            'success': True,
+            'message': 'Webhook processado com sucesso',
+            'received': True
+        }), 200
         
     except Exception as e:
-        logger.error(f"Erro no webhook: {str(e)}")
-        return jsonify({'error': 'Erro interno do servidor'}), 500 
+        logger.error(f'❌ Erro no webhook de pagamento: {str(e)}')
+        return jsonify({
+            'success': False,
+            'error': 'Erro ao processar webhook',
+            'message': str(e)
+        }), 400 

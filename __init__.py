@@ -30,12 +30,14 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = secrets.token_hex(32)
     app.config['SECRET_KEY'] = secrets.token_hex(16)
     
-    # Configurações de sessão para manter login por 1 hora
+    # ⏰ Configurações de sessão melhoradas - 2 HORAS de duração
     from datetime import timedelta
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # 2 horas
     app.config['SESSION_COOKIE_SECURE'] = False  # True apenas em HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # Proteção XSS
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção CSRF
+    app.config['SESSION_COOKIE_MAX_AGE'] = 7200  # 2 horas em segundos (2 * 60 * 60)
+    app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Renova a sessão a cada request
 
     db.init_app(app)
     JWTManager(app)

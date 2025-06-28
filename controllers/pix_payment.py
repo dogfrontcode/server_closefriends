@@ -6,6 +6,7 @@ from models import db
 import logging
 import requests
 from datetime import datetime
+import time
 
 # Importar o novo serviço modular
 from services.pix_recharge_service import pix_recharge_service
@@ -33,72 +34,139 @@ def require_auth():
 
 # ==================== FUNÇÃO DE CONSULTA FLUCSUS ====================
 
-def check_payment_status_flucsus(transaction_id):
+def check_payment_status_flucsus(transaction_id, max_retries=2):
     """
     Verifica o status de um pagamento diretamente na API da Flucsus
     
     Args:
         transaction_id (str): ID da transação na Flucsus
+        max_retries (int): Número máximo de tentativas
         
     Returns:
         dict: Dados do status do pagamento
     """
-    try:
-        logger.info(f"🔍 Verificando status do pagamento na Flucsus: {transaction_id}")
-        
-        # Consultar diretamente a API da Flucsus
-        flucsus_response = requests.get(
-            f"{FLUCSUS_CONFIG['api_url']}/gateway/transactions?id={transaction_id}",
-            headers={
-                'x-public-key': FLUCSUS_CONFIG['public_key'],
-                'x-secret-key': FLUCSUS_CONFIG['secret_key'],
-                'Content-Type': 'application/json'
-            },
-            timeout=10
-        )
-        
-        if flucsus_response.status_code == 200:
-            flucsus_data = flucsus_response.json()
-            logger.info(f"📊 Status da Flucsus: {flucsus_data.get('status', 'UNKNOWN')}")
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"🔍 Verificando status na Flucsus: {transaction_id} (tentativa {attempt + 1}/{max_retries + 1})")
             
-            # Verificar se foi pago
-            is_completed = flucsus_data.get('status') == 'COMPLETED'
+            # Consultar diretamente a API da Flucsus
+            flucsus_response = requests.get(
+                f"{FLUCSUS_CONFIG['api_url']}/gateway/transactions?id={transaction_id}",
+                headers={
+                    'x-public-key': FLUCSUS_CONFIG['public_key'],
+                    'x-secret-key': FLUCSUS_CONFIG['secret_key'],
+                    'Content-Type': 'application/json'
+                },
+                timeout=15  # Aumentar timeout
+            )
             
-            return {
-                'success': True,
-                'transaction_id': transaction_id,
-                'status': flucsus_data.get('status', 'PENDING'),
-                'is_paid': is_completed,
-                'is_completed': is_completed,
-                'flucsus_status': flucsus_data.get('status'),
-                'payed_at': flucsus_data.get('payedAt'),
-                'amount': flucsus_data.get('amount'),
-                'source': 'flucsus_api',
-                'message': 'Pagamento confirmado na Flucsus' if is_completed else 'Pagamento ainda pendente',
-                'raw_data': flucsus_data
-            }
-        else:
-            logger.error(f"❌ Erro na consulta Flucsus: {flucsus_response.status_code}")
+            logger.info(f"📊 Flucsus response - Status Code: {flucsus_response.status_code}")
+            
+            if flucsus_response.status_code == 200:
+                flucsus_data = flucsus_response.json()
+                logger.info(f"📊 Status da Flucsus: {flucsus_data.get('status', 'UNKNOWN')}")
+                
+                # Verificar se foi pago
+                is_completed = flucsus_data.get('status') == 'COMPLETED'
+                
+                return {
+                    'success': True,
+                    'transaction_id': transaction_id,
+                    'status': flucsus_data.get('status', 'PENDING'),
+                    'is_paid': is_completed,
+                    'is_completed': is_completed,
+                    'flucsus_status': flucsus_data.get('status'),
+                    'payed_at': flucsus_data.get('payedAt'),
+                    'amount': flucsus_data.get('amount'),
+                    'source': 'flucsus_api',
+                    'message': 'Pagamento confirmado na Flucsus' if is_completed else 'Pagamento ainda pendente',
+                    'raw_data': flucsus_data,
+                    'attempts': attempt + 1
+                }
+            
+            elif flucsus_response.status_code == 403:
+                logger.warning(f"⚠️ Erro 403 - Transação pode ter expirado ou não existe: {transaction_id}")
+                return {
+                    'success': False,
+                    'error': f'Transação não encontrada ou expirada (HTTP 403)',
+                    'status_code': 403,
+                    'source': 'flucsus_api',
+                    'transaction_id': transaction_id,
+                    'message': 'A transação pode ter expirado (geralmente 15-30 minutos) ou não existe na Flucsus',
+                    'attempts': attempt + 1
+                }
+            
+            elif flucsus_response.status_code == 404:
+                logger.warning(f"⚠️ Erro 404 - Transação não encontrada: {transaction_id}")
+                return {
+                    'success': False,
+                    'error': f'Transação não encontrada (HTTP 404)',
+                    'status_code': 404,
+                    'source': 'flucsus_api',
+                    'transaction_id': transaction_id,
+                    'message': 'Transação não existe na Flucsus',
+                    'attempts': attempt + 1
+                }
+            
+            else:
+                error_msg = f'Erro HTTP {flucsus_response.status_code}'
+                logger.error(f"❌ Erro na consulta Flucsus: {error_msg}")
+                
+                # Se não é a última tentativa, aguardar e tentar novamente
+                if attempt < max_retries:
+                    wait_time = (attempt + 1) * 2  # 2s, 4s, 6s...
+                    logger.info(f"⏳ Aguardando {wait_time}s antes da próxima tentativa...")
+                    time.sleep(wait_time)
+                    continue
+                
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'status_code': flucsus_response.status_code,
+                    'source': 'flucsus_api',
+                    'transaction_id': transaction_id,
+                    'response_text': flucsus_response.text[:200] if flucsus_response.text else 'N/A',
+                    'attempts': attempt + 1
+                }
+                
+        except requests.exceptions.Timeout:
+            logger.error(f"❌ Timeout ao consultar Flucsus (tentativa {attempt + 1})")
+            if attempt < max_retries:
+                logger.info(f"⏳ Aguardando 3s antes da próxima tentativa...")
+                time.sleep(3)
+                continue
+            
             return {
                 'success': False,
-                'error': f'Erro na consulta Flucsus: {flucsus_response.status_code}',
-                'source': 'flucsus_api'
+                'error': 'Timeout ao consultar Flucsus',
+                'source': 'flucsus_api',
+                'transaction_id': transaction_id,
+                'attempts': attempt + 1
             }
             
-    except requests.exceptions.Timeout:
-        logger.error("❌ Timeout ao consultar Flucsus")
-        return {
-            'success': False,
-            'error': 'Timeout ao consultar Flucsus',
-            'source': 'flucsus_api'
-        }
-    except Exception as e:
-        logger.error(f"❌ Erro ao consultar Flucsus: {str(e)}")
-        return {
-            'success': False,
-            'error': f'Erro ao consultar Flucsus: {str(e)}',
-            'source': 'flucsus_api'
-        }
+        except Exception as e:
+            logger.error(f"❌ Erro inesperado ao consultar Flucsus: {str(e)}")
+            if attempt < max_retries:
+                logger.info(f"⏳ Aguardando 2s antes da próxima tentativa...")
+                time.sleep(2)
+                continue
+                
+            return {
+                'success': False,
+                'error': f'Erro inesperado: {str(e)}',
+                'source': 'flucsus_api',
+                'transaction_id': transaction_id,
+                'attempts': attempt + 1
+            }
+    
+    # Não deveria chegar aqui, mas por segurança
+    return {
+        'success': False,
+        'error': 'Máximo de tentativas excedido',
+        'source': 'flucsus_api',
+        'transaction_id': transaction_id,
+        'attempts': max_retries + 1
+    }
 
 # ==================== ENDPOINTS DE PAGAMENTO PIX ====================
 
@@ -224,13 +292,13 @@ def get_available_amounts():
 @pix_bp.route('/check-payment/<payment_id>', methods=['GET'])
 def check_payment_status(payment_id):
     """
-    Verifica o status de um pagamento PIX consultando DIRETAMENTE a Flucsus
+    Verifica o status de um pagamento PIX consultando APENAS a Flucsus
     
     Args:
         payment_id (str): ID do pagamento
         
     Returns:
-        JSON: Status do pagamento
+        JSON: Status do pagamento diretamente da Flucsus
     """
     try:
         # Verificar autenticação
@@ -242,7 +310,7 @@ def check_payment_status(payment_id):
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
-        # Buscar transação pendente no banco local
+        # Buscar transação no banco local (apenas para validar se existe)
         pending_transaction = CreditTransaction.query.filter_by(
             user_id=user.id,
             reference_id=payment_id
@@ -251,11 +319,11 @@ def check_payment_status(payment_id):
         if not pending_transaction:
             return jsonify({'error': 'Pagamento não encontrado'}), 404
         
-        # 🚀 CONSULTAR DIRETAMENTE A FLUCSUS PRIMEIRO
+        # 🚀 CONSULTAR APENAS A FLUCSUS - SEM FALLBACK
         flucsus_result = check_payment_status_flucsus(payment_id)
         
         if flucsus_result['success']:
-            # Se conseguiu consultar a Flucsus
+            # ✅ Conseguiu consultar a Flucsus - processar se confirmado
             if flucsus_result['is_completed'] and pending_transaction.transaction_type == 'pix_pending':
                 # Pagamento foi confirmado na Flucsus, vamos processar localmente
                 logger.info(f"✅ Pagamento confirmado na Flucsus, processando: {payment_id}")
@@ -284,47 +352,34 @@ def check_payment_status(payment_id):
                 
                 logger.info(f'💰 Créditos adicionados - User: {user.username}, Valor: R$ {amount:.2f}, Novo saldo: R$ {user.credits:.2f}')
             
-            # ✅ PRIORIZAR STATUS LOCAL SE JÁ FOI CONFIRMADO
-            is_locally_confirmed = pending_transaction.transaction_type == 'pix_confirmed'
-            final_is_paid = flucsus_result['is_completed'] or is_locally_confirmed
-            final_status = 'COMPLETED' if final_is_paid else 'PENDING'
-            
-            # Determinar a fonte mais confiável
-            source = 'flucsus_api' if flucsus_result['is_completed'] else ('local_confirmed' if is_locally_confirmed else 'flucsus_api')
-            message = flucsus_result.get('message')
-            if is_locally_confirmed and not flucsus_result['is_completed']:
-                message = 'Pagamento confirmado localmente via webhook'
-            
+            # Retornar status da Flucsus SEMPRE
             return jsonify({
                 'success': True,
-                'status': final_status,
+                'status': flucsus_result.get('status', 'UNKNOWN'),
                 'payment_id': payment_id,
-                'isPaid': final_is_paid,
+                'isPaid': flucsus_result['is_completed'],
                 'amount': pending_transaction.amount,
-                'transaction_type': pending_transaction.transaction_type,
-                'source': source,
-                'flucsus_status': flucsus_result.get('flucsus_status'),
+                'source': 'flucsus_api',
+                'flucsus_status': flucsus_result.get('status'),
                 'payed_at': flucsus_result.get('payed_at'),
-                'message': message
+                'message': flucsus_result.get('message'),
+                'raw_flucsus_data': flucsus_result.get('raw_data', {})
             }), 200
         else:
-            # ⚠️ FALLBACK: Se Flucsus falhar, usar status local
-            logger.warning(f"❌ Falha ao consultar Flucsus, usando fallback local: {flucsus_result.get('error')}")
-            
-            is_paid = pending_transaction.transaction_type == 'pix_confirmed'
-            status = 'COMPLETED' if is_paid else 'PENDING'
+            # ❌ Erro na consulta à Flucsus - retornar erro real da Flucsus
+            logger.warning(f"❌ Erro na consulta Flucsus: {flucsus_result.get('error')}")
             
             return jsonify({
-                'success': True,
-                'status': status,
+                'success': False,
+                'status': 'ERROR',
                 'payment_id': payment_id,
-                'isPaid': is_paid,
+                'isPaid': False,
                 'amount': pending_transaction.amount,
-                'transaction_type': pending_transaction.transaction_type,
-                'source': 'local_fallback',
+                'source': 'flucsus_api',
                 'flucsus_error': flucsus_result.get('error'),
-                'message': 'Status obtido do banco local (Flucsus indisponível)'
-            }), 200
+                'error_details': flucsus_result,
+                'message': f"Erro na consulta Flucsus: {flucsus_result.get('error')}"
+            }), 200  # 200 porque é uma resposta válida, só que com erro da Flucsus
         
     except Exception as e:
         logger.error(f"Erro ao verificar status do pagamento: {str(e)}")

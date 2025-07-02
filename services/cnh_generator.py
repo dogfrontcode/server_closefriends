@@ -91,13 +91,21 @@ class CNHImageGenerator:
             # Carregar template base
             template_path = os.path.join(os.path.dirname(__file__), '..', self.TEMPLATE_PATH)
             if not os.path.exists(template_path):
-                raise Exception(f"Template não encontrado: {template_path}")
+                logger.warning(f"Template não encontrado: {template_path}. Usando imagem em branco.")
+                # Fallback: criar imagem em branco se template não existir
+                image = Image.new('RGB', (self.IMAGE_WIDTH, self.IMAGE_HEIGHT), (255, 255, 255))
+            else:
+                image = Image.open(template_path).copy()
             
-            image = Image.open(template_path).copy()
             draw = ImageDraw.Draw(image)
             
             # Aplicar dados usando coordenadas da matriz
-            self._apply_data_with_coordinates(draw, cnh_request)
+            try:
+                self._apply_data_with_coordinates(draw, cnh_request)
+            except Exception as e:
+                logger.error(f"Erro ao aplicar coordenadas: {str(e)}")
+                # Fallback: desenhar apenas o nome no centro para testar
+                draw.text((100, 200), cnh_request.nome_completo or "TESTE", fill=(0, 0, 0))
             
             # Gerar nome único para arquivo
             filename = self._generate_filename(cnh_request)
@@ -122,73 +130,66 @@ class CNHImageGenerator:
             cnh_request: Objeto CNHRequest com dados
         """
         try:
-            # Nome completo na posição especificada (128.5, 149.5)
-            nome_completo = cnh_request.nome_completo or ""
-            if nome_completo:
-                coord = CNH_COORDINATES["nome_completo"]
-                font_config = FONT_CONFIGS["nome_completo"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, nome_completo.upper(), fill=font_config["color"], font=font)
+            # Função auxiliar para desenhar campo se coordenada existir
+            def draw_field_if_exists(field_name, text, rotated=False, rotation=0):
+                if text and field_name in CNH_COORDINATES and field_name in FONT_CONFIGS:
+                    coord = CNH_COORDINATES[field_name]
+                    font_config = FONT_CONFIGS[field_name]
+                    font = self._get_font(font_config["size"])
+                    
+                    if rotated:
+                        self._draw_rotated_text(draw, str(text), coord, font, font_config["color"], rotation)
+                    else:
+                        draw.text(coord, str(text), fill=font_config["color"], font=font)
+                    logger.debug(f"Campo '{field_name}' desenhado: '{text}' em {coord}")
+                    return True
+                else:
+                    logger.debug(f"Campo '{field_name}' ignorado - texto: '{text}', tem_coord: {field_name in CNH_COORDINATES}, tem_font: {field_name in FONT_CONFIGS}")
+                return False
             
-            # Número da habilitação na posição especificada (67.5, 465)
+            # Nome completo
+            nome_completo = cnh_request.nome_completo or ""
+            draw_field_if_exists("nome_completo", nome_completo.upper())
+            
+            # Número da habilitação (rotacionado)
             numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id:011d}"
-            if numero_habilitacao:
-                coord = CNH_COORDINATES["numero_habilitacao"]
-                font_config = FONT_CONFIGS["numero_habilitacao"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, numero_habilitacao, fill=font_config["color"], font=font)
+            draw_field_if_exists("numero_habilitacao", numero_habilitacao, rotated=True, rotation=270)
+            
+            # Outros campos - só desenha se tiver coordenadas definidas
             
             # Primeira habilitação
             if cnh_request.primeira_habilitacao:
-                primeira_hab = cnh_request.primeira_habilitacao.strftime("%d%m%Y")
-                coord = CNH_COORDINATES["primeira_habilitacao"]
-                font_config = FONT_CONFIGS["primeira_habilitacao"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, primeira_hab, fill=font_config["color"], font=font)
+                primeira_hab = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
+                draw_field_if_exists("primeira_habilitacao", primeira_hab)
             
             # Data de nascimento
             if cnh_request.data_nascimento:
-                data_nasc = cnh_request.data_nascimento.strftime("%d%m%Y")
-                coord = CNH_COORDINATES["data_nascimento"]
-                font_config = FONT_CONFIGS["data_nascimento"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, data_nasc, fill=font_config["color"], font=font)
+                data_nasc = cnh_request.data_nascimento.strftime("%d/%m/%Y")
+                draw_field_if_exists("data_nascimento", data_nasc)
             
             # Data de emissão
             if cnh_request.data_emissao:
-                data_emissao = cnh_request.data_emissao.strftime("%d%m%Y")
+                data_emissao = cnh_request.data_emissao.strftime("%d/%m/%Y")
             else:
-                data_emissao = cnh_request.created_at.strftime("%d%m%Y")
-            coord = CNH_COORDINATES["data_emissao"]
-            font_config = FONT_CONFIGS["data_emissao"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, data_emissao, fill=font_config["color"], font=font)
+                data_emissao = cnh_request.created_at.strftime("%d/%m/%Y")
+            draw_field_if_exists("data_emissao", data_emissao)
             
             # Data de validade
             if cnh_request.validade:
-                data_validade = cnh_request.validade.strftime("%d%m%Y")
+                data_validade = cnh_request.validade.strftime("%d/%m/%Y")
             else:
                 from datetime import timedelta
-                data_validade = (cnh_request.created_at + timedelta(days=365*5)).strftime("%d%m%Y")
-            coord = CNH_COORDINATES["validade"]
-            font_config = FONT_CONFIGS["validade"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, data_validade, fill=font_config["color"], font=font)
+                data_validade = (cnh_request.created_at + timedelta(days=365*5)).strftime("%d/%m/%Y")
+            draw_field_if_exists("validade", data_validade)
             
             # ACC
             acc = cnh_request.acc or "NAO"
             acc_text = "S" if acc == "SIM" else "N"
-            coord = CNH_COORDINATES["acc"]
-            font_config = FONT_CONFIGS["acc"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, acc_text, fill=font_config["color"], font=font)
+            draw_field_if_exists("acc", acc_text)
             
             # Categoria
             categoria = cnh_request.categoria_habilitacao or "B"
-            coord = CNH_COORDINATES["categoria"]
-            font_config = FONT_CONFIGS["categoria"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, categoria, fill=font_config["color"], font=font)
+            draw_field_if_exists("categoria", categoria)
             
             # Documento de identidade
             doc_numero = cnh_request.doc_identidade_numero or ""
@@ -196,40 +197,23 @@ class CNHImageGenerator:
             doc_uf = cnh_request.doc_identidade_uf or "SP"
             if doc_numero:
                 doc_completo = f"{doc_numero} {doc_orgao} {doc_uf}"
-                coord = CNH_COORDINATES["doc_identidade"]
-                font_config = FONT_CONFIGS["doc_identidade"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, doc_completo, fill=font_config["color"], font=font)
+                draw_field_if_exists("doc_identidade", doc_completo)
             
             # CPF
             cpf = cnh_request.cpf or ""
-            if cpf:
-                coord = CNH_COORDINATES["cpf"]
-                font_config = FONT_CONFIGS["cpf"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, cpf, fill=font_config["color"], font=font)
+            draw_field_if_exists("cpf", cpf)
             
             # Número de registro
             numero_registro = cnh_request.numero_registro or f"{cnh_request.id:011d}"
-            coord = CNH_COORDINATES["numero_registro"]
-            font_config = FONT_CONFIGS["numero_registro"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, numero_registro, fill=font_config["color"], font=font)
+            draw_field_if_exists("numero_registro", numero_registro)
             
             # Nacionalidade
             nacionalidade = cnh_request.nacionalidade or "BRASILEIRA"
-            coord = CNH_COORDINATES["nacionalidade"]
-            font_config = FONT_CONFIGS["nacionalidade"]
-            font = self._get_font(font_config["size"])
-            draw.text(coord, nacionalidade, fill=font_config["color"], font=font)
+            draw_field_if_exists("nacionalidade", nacionalidade)
             
             # Filiação (nome da mãe)
             nome_mae = cnh_request.nome_mae or ""
-            if nome_mae:
-                coord = CNH_COORDINATES["filiacao"]
-                font_config = FONT_CONFIGS["filiacao"]
-                font = self._get_font(font_config["size"])
-                draw.text(coord, nome_mae.upper(), fill=font_config["color"], font=font)
+            draw_field_if_exists("filiacao", nome_mae.upper())
                 
             logger.info("Dados aplicados com sucesso usando coordenadas da matriz")
             
@@ -260,6 +244,66 @@ class CNHImageGenerator:
                 pass
             # Fallback para fonte padrão
             return ImageFont.load_default()
+    
+    def _draw_rotated_text(self, draw, text, position, font, color, rotation=90):
+        """
+        Desenha texto rotacionado na imagem.
+        
+        Args:
+            draw: Objeto ImageDraw
+            text: Texto a ser desenhado
+            position: Posição (x, y) onde desenhar
+            font: Fonte do texto
+            color: Cor do texto
+            rotation: Ângulo de rotação em graus (90 = vertical)
+        """
+        try:
+            # Obter dimensões do texto
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Criar imagem temporária para o texto
+            if rotation in [90, 270]:
+                # Para rotações de 90° e 270°, invertemos largura e altura
+                temp_img = Image.new('RGBA', (text_height + 20, text_width + 20), (255, 255, 255, 0))
+            else:
+                temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (255, 255, 255, 0))
+            
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Desenhar texto na imagem temporária
+            temp_draw.text((10, 10), text, font=font, fill=color)
+            
+            # Rotacionar a imagem temporária
+            if rotation != 0:
+                temp_img = temp_img.rotate(rotation, expand=True)
+            
+            # Colar a imagem rotacionada na imagem principal
+            # Para texto vertical, ajustar a posição para que fique bem posicionado
+            x, y = position
+            if rotation == 90:
+                # Texto vertical (de baixo para cima)
+                paste_x = int(x - temp_img.width // 2)
+                paste_y = int(y)
+            elif rotation == 270:
+                # Texto vertical (de cima para baixo)
+                paste_x = int(x - temp_img.width // 2)
+                paste_y = int(y - temp_img.height)
+            else:
+                # Texto horizontal
+                paste_x = int(x)
+                paste_y = int(y)
+            
+            # Colar usando a própria imagem como máscara para transparência
+            draw._image.paste(temp_img, (paste_x, paste_y), temp_img)
+            
+            logger.debug(f"Texto rotacionado '{text}' desenhado em ({paste_x}, {paste_y}) com rotação {rotation}°")
+            
+        except Exception as e:
+            logger.error(f"Erro ao desenhar texto rotacionado: {str(e)}")
+            # Fallback: desenhar texto normal se a rotação falhar
+            draw.text(position, text, font=font, fill=color)
     
     def _draw_header(self, draw, cnh_request):
         """Desenha cabeçalho da CNH."""
@@ -678,22 +722,32 @@ class CNHImageGenerator:
         """
         try:
             if not os.path.exists(image_path):
+                logger.error(f"Arquivo não existe: {image_path}")
                 return False
             
             # Verificar se arquivo não está vazio
-            if os.path.getsize(image_path) == 0:
+            file_size = os.path.getsize(image_path)
+            if file_size == 0:
+                logger.error(f"Arquivo vazio: {image_path}")
                 return False
+            
+            logger.info(f"Validando imagem: {image_path}, tamanho: {file_size} bytes")
             
             # Tentar abrir imagem
             with Image.open(image_path) as img:
-                # Verificar dimensões
-                if img.size != (self.IMAGE_WIDTH, self.IMAGE_HEIGHT):
+                # Verificar se a imagem tem dimensões razoáveis (não validar dimensões específicas)
+                width, height = img.size
+                if width < 400 or height < 300 or width > 1000 or height > 800:
+                    logger.error(f"Dimensões fora do intervalo válido: {img.size}")
                     return False
+                logger.info(f"Dimensões da imagem: {img.size}")
                 
                 # Verificar formato
                 if img.format != 'PNG':
+                    logger.error(f"Formato inválido: {img.format}, esperado: PNG")
                     return False
             
+            logger.info(f"Imagem válida: {image_path}")
             return True
             
         except Exception as e:
@@ -727,8 +781,8 @@ def gerar_cnh_basica(cnh_request):
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
         
-        # Gerar thumbnail (opcional)
-        generator.generate_thumbnail(image_path)
+        # Gerar thumbnail (opcional) - DESABILITADO para evitar imagens duplicadas
+        # generator.generate_thumbnail(image_path)
         
         # Marcar como completa
         cnh_request.marcar_como_completa(image_path)

@@ -7,7 +7,112 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
   <style>
-    /* Seus estilos... */
+    /* Base styles and dark mode variables */
+    :root {
+      --bg-gradient-light: linear-gradient(135deg, #4f46e5 0%, #7e22ce 50%, #ec4899 100%);
+      --bg-gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      --card-bg-light: rgba(17, 24, 39, 0.7);
+      --card-bg-dark: rgba(30, 30, 30, 0.9);
+      --text-primary-light: #ffffff;
+      --text-primary-dark: #e5e5e5;
+      --text-secondary-light: #d1d5db;
+      --text-secondary-dark: #9ca3af;
+      --input-bg-light: rgba(255, 255, 255, 0.05);
+      --input-bg-dark: rgba(60, 60, 60, 0.8);
+      --input-border-light: rgba(255, 255, 255, 0.1);
+      --input-border-dark: rgba(100, 100, 100, 0.3);
+      --button-gradient-light: linear-gradient(45deg, #4f46e5, #7c3aed);
+      --button-gradient-dark: linear-gradient(45deg, #374151, #4b5563);
+      --particles-color-light: #ffffff;
+      --particles-color-dark: #9ca3af;
+    }
+
+    /* Dark mode toggle button */
+    .dark-mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      padding: 10px 15px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    
+    .dark-mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      background: var(--bg-gradient-dark);
+    }
+    
+    body.dark-mode .login-card {
+      background: var(--card-bg-dark);
+      border: 1px solid rgba(100, 100, 100, 0.3);
+    }
+    
+    body.dark-mode .login-card:hover {
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+    }
+    
+    body.dark-mode h2 {
+      color: var(--text-primary-dark);
+    }
+    
+    body.dark-mode p,
+    body.dark-mode label {
+      color: var(--text-secondary-dark);
+    }
+    
+    body.dark-mode .input-field {
+      background: var(--input-bg-dark);
+      border: 1px solid var(--input-border-dark);
+      color: var(--text-primary-dark);
+    }
+    
+    body.dark-mode .input-field:focus {
+      background: rgba(80, 80, 80, 0.9);
+      border-color: rgba(120, 120, 120, 0.5);
+      box-shadow: 0 0 15px rgba(75, 85, 99, 0.3);
+    }
+    
+    body.dark-mode .input-field::placeholder {
+      color: #9ca3af;
+    }
+    
+    body.dark-mode .login-button {
+      background: var(--button-gradient-dark);
+    }
+    
+    body.dark-mode .login-button:hover {
+      box-shadow: 0 6px 20px rgba(75, 85, 99, 0.3);
+    }
+    
+    body.dark-mode a {
+      color: #9ca3af;
+    }
+    
+    body.dark-mode a:hover {
+      color: #d1d5db;
+    }
+
+    /* Light mode styles (default) */
+    body:not(.dark-mode) {
+      background: var(--bg-gradient-light);
+    }
+
+    /* Seus estilos originais... */
     #particles-js {
       position: absolute;
       width: 100%;
@@ -80,6 +185,12 @@
   </style>
 </head>
 <body class="min-h-screen bg-gradient overflow-hidden">
+  <!-- Dark Mode Toggle Button -->
+  <button class="dark-mode-toggle" onclick="toggleDarkMode()">
+    <span id="darkModeIcon">🌙</span>
+    <span id="darkModeText">Dark</span>
+  </button>
+  
   <div id="particles-js"></div>
   
   <div class="content-wrapper flex min-h-screen items-center justify-center p-4">
@@ -114,6 +225,60 @@
   </div>
   
   <script>
+    // Dark mode functions
+    function toggleDarkMode() {
+      const body = document.body;
+      const isDarkMode = body.classList.toggle('dark-mode');
+      
+      // Update toggle button appearance
+      const icon = document.getElementById('darkModeIcon');
+      const text = document.getElementById('darkModeText');
+      
+      if (isDarkMode) {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      } else {
+        icon.textContent = '🌙';
+        text.textContent = 'Dark';
+      }
+      
+      // Save preference
+      localStorage.setItem('darkMode', isDarkMode);
+      
+      // Update particles color
+      updateParticlesColor(isDarkMode);
+    }
+    
+    function initializeDarkMode() {
+      const savedDarkMode = localStorage.getItem('darkMode');
+      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      // Use saved preference, or fall back to system preference
+      const shouldUseDarkMode = savedDarkMode ? savedDarkMode === 'true' : prefersDarkMode;
+      
+      if (shouldUseDarkMode) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeIcon').textContent = '☀️';
+        document.getElementById('darkModeText').textContent = 'Light';
+      }
+      
+      return shouldUseDarkMode;
+    }
+    
+    function updateParticlesColor(isDarkMode) {
+      const particleColor = isDarkMode ? '#9ca3af' : '#ffffff';
+      
+      // Update particles configuration
+      if (window.pJSDom && window.pJSDom[0]) {
+        window.pJSDom[0].pJS.particles.color.value = particleColor;
+        window.pJSDom[0].pJS.particles.line_linked.color = particleColor;
+        window.pJSDom[0].pJS.fn.particlesRefresh();
+      }
+    }
+    
+    // Initialize dark mode before particles
+    const isDarkMode = initializeDarkMode();
+    
     // Inicia os particles.js (se necessário)
     particlesJS('particles-js', {
       "particles": {
@@ -121,14 +286,14 @@
               "value": 80,
               "density": { "enable": true, "value_area": 800 }
           },
-          "color": { "value": "#ffffff" },
+          "color": { "value": isDarkMode ? "#9ca3af" : "#ffffff" },
           "shape": { "type": "circle" },
           "opacity": { "value": 0.5, "random": true },
           "size": { "value": 3, "random": true },
           "line_linked": {
               "enable": true,
               "distance": 150,
-              "color": "#ffffff",
+              "color": isDarkMode ? "#9ca3af" : "#ffffff",
               "opacity": 0.4,
               "width": 1
           },
@@ -151,6 +316,24 @@
           }
       },
       "retina_detect": true
+    });
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+      // Only auto-update if user hasn't manually set a preference
+      if (!localStorage.getItem('darkMode')) {
+        if (e.matches) {
+          document.body.classList.add('dark-mode');
+          document.getElementById('darkModeIcon').textContent = '☀️';
+          document.getElementById('darkModeText').textContent = 'Light';
+          updateParticlesColor(true);
+        } else {
+          document.body.classList.remove('dark-mode');
+          document.getElementById('darkModeIcon').textContent = '🌙';
+          document.getElementById('darkModeText').textContent = 'Dark';
+          updateParticlesColor(false);
+        }
+      }
     });
     
     document.getElementById('loginForm').addEventListener('submit', async function(event) {

@@ -335,6 +335,303 @@
         #pixModalContent::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* Dark Mode Styles */
+        .dark {
+            color: #f3f4f6;
+        }
+
+        .dark .bg-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+        }
+
+        .dark .bg-white {
+            background-color: #1e293b !important;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #0f172a !important;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+
+        .dark .bg-gray-200 {
+            background-color: #475569 !important;
+        }
+
+        .dark .text-gray-800 {
+            color: #f1f5f9 !important;
+        }
+
+        .dark .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+
+        .dark .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+
+        .dark .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+
+        .dark .border-gray-200 {
+            border-color: #475569 !important;
+        }
+
+        .dark .border-gray-300 {
+            border-color: #64748b !important;
+        }
+
+        .dark .shadow-sm {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #334155 !important;
+        }
+
+        /* Dark mode toggle button */
+        .theme-toggle {
+            position: relative;
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle i {
+            font-size: 18px;
+            color: #6b7280;
+            transition: all 0.3s ease;
+        }
+
+        .dark .theme-toggle i {
+            color: #cbd5e1;
+        }
+
+        /* Cards and modals dark mode */
+        .dark .bg-white.shadow-lg {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        .dark .bg-gray-800 {
+            background-color: #0f172a !important;
+        }
+
+        /* Form elements comprehensive styling */
+        .dark input,
+        .dark select,
+        .dark textarea {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+            color: #f1f5f9 !important;
+        }
+
+        .dark input:focus,
+        .dark select:focus,
+        .dark textarea:focus {
+            border-color: #3b82f6 !important;
+            background-color: #475569 !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .dark input::placeholder,
+        .dark textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        .dark label {
+            color: #e2e8f0 !important;
+        }
+
+        /* File inputs */
+        .dark input[type="file"] {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+            color: #f1f5f9 !important;
+        }
+
+        .dark input[type="file"]::-webkit-file-upload-button {
+            background-color: #475569 !important;
+            color: #f1f5f9 !important;
+            border: 1px solid #64748b !important;
+        }
+
+        /* Select dropdown styling */
+        .dark select option {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+
+        /* Sidebar dark mode */
+        .dark #sidebar.bg-white {
+            background-color: #1e293b !important;
+        }
+
+        /* Header dark mode */
+        .dark header.bg-white {
+            background-color: #1e293b !important;
+        }
+
+        /* Main content area */
+        .dark main.bg-gray-50 {
+            background-color: #0f172a !important;
+        }
+
+        /* Cards comprehensive styling */
+        .dark .bg-white {
+            background-color: #1e293b !important;
+        }
+
+        .dark .bg-white.p-6.rounded-lg.shadow-sm {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        .dark .bg-white.rounded-lg.shadow-sm.border.border-gray-200 {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        .dark .bg-white.border.border-gray-200.rounded-lg {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        /* Colored backgrounds for sections */
+        .dark .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+
+        .dark .bg-green-50 {
+            background-color: #14532d !important;
+        }
+
+        .dark .bg-yellow-50 {
+            background-color: #451a03 !important;
+        }
+
+        .dark .bg-purple-50 {
+            background-color: #581c87 !important;
+        }
+
+        .dark .bg-indigo-50 {
+            background-color: #312e81 !important;
+        }
+
+        .dark .bg-orange-50 {
+            background-color: #9a3412 !important;
+        }
+
+        .dark .bg-amber-50 {
+            background-color: #92400e !important;
+        }
+
+        /* Hover states */
+        .dark .hover\:bg-blue-50:hover {
+            background-color: #1e3a8a !important;
+        }
+
+        .dark .hover\:bg-green-50:hover {
+            background-color: #14532d !important;
+        }
+
+        .dark .hover\:bg-purple-50:hover {
+            background-color: #581c87 !important;
+        }
+
+        .dark .hover\:bg-yellow-50:hover {
+            background-color: #451a03 !important;
+        }
+
+        /* Button styling */
+        .dark .bg-blue-500 {
+            background-color: #3b82f6 !important;
+        }
+
+        .dark .border-gray-300 {
+            border-color: #475569 !important;
+        }
+
+        .dark .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+
+        /* Pagination buttons */
+        .dark .border-gray-300.rounded-md.text-gray-700 {
+            border-color: #475569 !important;
+            color: #e2e8f0 !important;
+            background-color: #334155 !important;
+        }
+
+        .dark .border-gray-300.rounded-md.text-gray-700:hover {
+            background-color: #475569 !important;
+        }
+
+        /* Button disabled states */
+        .dark button:disabled {
+            background-color: #374151 !important;
+            color: #6b7280 !important;
+            border-color: #4b5563 !important;
+        }
+
+        /* Tables and lists */
+        .dark .border-b.border-gray-100 {
+            border-color: #374151 !important;
+        }
+
+        .dark .divide-y.divide-gray-100 > * {
+            border-color: #374151 !important;
+        }
+
+        /* Modal overlays */
+        .dark .fixed.inset-0.bg-black.bg-opacity-50 {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        /* Notifications */
+        .dark .bg-white.rounded-lg.shadow-lg {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        /* Scrollbars for dark mode */
+        .dark ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .dark ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient overflow-x-hidden overflow-y-auto">
@@ -459,6 +756,11 @@
                         <button class="p-2 rounded-lg hover:bg-gray-100 relative">
                             <i class="fas fa-bell text-gray-600"></i>
                             <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
+                        </button>
+                        
+                        <!-- Dark Mode Toggle -->
+                        <button onclick="toggleDarkMode()" class="theme-toggle" title="Alternar tema escuro">
+                            <i id="themeIcon" class="fas fa-moon"></i>
                         </button>
                         
                         <!-- Quick CNH Button -->
@@ -1643,6 +1945,39 @@
             sidebar.offsetHeight;
         }
 
+        // Dark mode toggle function
+        function toggleDarkMode() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            // Toggle dark class on body
+            body.classList.toggle('dark');
+            
+            // Update icon based on current mode
+            if (body.classList.contains('dark')) {
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('darkMode', 'false');
+            }
+        }
+
+        // Initialize dark mode on page load
+        function initializeDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (darkMode === 'true') {
+                body.classList.add('dark');
+                themeIcon.className = 'fas fa-sun';
+            } else {
+                body.classList.remove('dark');
+                themeIcon.className = 'fas fa-moon';
+            }
+        }
+
         // CNH Form functions
         function formatCPF(cpf) {
             cpf = cpf.replace(/\D/g, '');
@@ -2651,6 +2986,9 @@
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Página carregada, inicializando...');
+            
+            // Initialize dark mode
+            initializeDarkMode();
             
             // Start auto-refresh
             startAutoRefresh();

@@ -15,16 +15,16 @@ CNH_COORDINATES = {
     "data_nascimento": ( 483, 171),
     "local_nascimento": (483, 171),
     "uf_nascimento": (483, 171),
-    "data_emissao": (361, 213),
-    "validade": (470, 213),
+    "data_emissao": (317, 223),
+    "validade": (440, 223),
     "acc": (579, 213),
-    "categoria": (640, 213),
-    "doc_identidade": (483, 253),
+    "categoria": (581, 305), #habilitacao
+    "doc_identidade": (317, 264),
     "orgao_emissor": (483, 253),
     "uf_emissor": (483, 253),
     "cpf": (361, 293),
     "numero_registro": (503, 293),
-    "cat_hab": (615, 293),
+    "cat_hab": (581, 308), # oque é isso ?
     "nacionalidade": (348, 333),
     "filiacao": (483, 373),
     "assinatura_portador": (204, 477)

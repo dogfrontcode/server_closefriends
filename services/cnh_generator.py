@@ -4,27 +4,27 @@ import os
 from datetime import datetime, date
 import logging
 import uuid
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from static.cnh_matriz.coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH
 
 logger = logging.getLogger(__name__)
 
 class CNHImageGenerator:
     """
-    Gerador de imagem CNH básica.
-    Versão inicial: imagem em branco com dados de texto simples.
+    Gerador de imagem CNH usando template oficial.
+    Usa coordenadas definidas na matriz para posicionamento preciso.
     """
     
     # Configurações da imagem
-    IMAGE_WIDTH = 856  # Formato padrão CNH
-    IMAGE_HEIGHT = 540
-    BACKGROUND_COLOR = (250, 250, 250)  # Branco suave
-    TEXT_COLOR = (33, 37, 41)  # Cinza escuro
-    HEADER_COLOR = (13, 110, 253)  # Azul Brasil
-    ACCENT_COLOR = (25, 135, 84)  # Verde
-    BORDER_COLOR = (108, 117, 125)  # Cinza médio
+    IMAGE_WIDTH = 700  # Largura do template
+    IMAGE_HEIGHT = 440  # Altura do template
+    TEXT_COLOR = (0, 0, 0)  # Preto para texto
     
     # Diretórios
     OUTPUT_DIR = "static/generated_cnhs"
     FONTS_DIR = "static/fonts"
+    TEMPLATE_PATH = "static/cnh_matriz/front-cnh.png"
     
     def __init__(self):
         """Inicializa gerador e garante que diretórios existem."""
@@ -74,7 +74,7 @@ class CNHImageGenerator:
     
     def generate_basic_cnh(self, cnh_request):
         """
-        Gera imagem básica de CNH com dados fornecidos.
+        Gera CNH usando template oficial com coordenadas precisas.
         
         Args:
             cnh_request: Objeto CNHRequest com dados
@@ -86,18 +86,18 @@ class CNHImageGenerator:
             Exception: Se houver erro na geração
         """
         try:
-            logger.info(f"Iniciando geração de CNH básica - ID: {cnh_request.id}")
+            logger.info(f"Iniciando geração de CNH com template - ID: {cnh_request.id}")
             
-            # Criar imagem base
-            image = Image.new('RGB', (self.IMAGE_WIDTH, self.IMAGE_HEIGHT), self.BACKGROUND_COLOR)
+            # Carregar template base
+            template_path = os.path.join(os.path.dirname(__file__), '..', self.TEMPLATE_PATH)
+            if not os.path.exists(template_path):
+                raise Exception(f"Template não encontrado: {template_path}")
+            
+            image = Image.open(template_path).copy()
             draw = ImageDraw.Draw(image)
             
-            # Desenhar layout básico
-            self._draw_header(draw, cnh_request)
-            self._draw_photo_placeholder(draw)
-            self._draw_personal_data(draw, cnh_request)
-            self._draw_cnh_details(draw, cnh_request)
-            self._draw_footer(draw, cnh_request)
+            # Aplicar dados usando coordenadas da matriz
+            self._apply_data_with_coordinates(draw, cnh_request)
             
             # Gerar nome único para arquivo
             filename = self._generate_filename(cnh_request)
@@ -112,6 +112,154 @@ class CNHImageGenerator:
         except Exception as e:
             logger.error(f"Erro ao gerar CNH - ID: {cnh_request.id}, Erro: {str(e)}")
             raise e
+    
+    def _apply_data_with_coordinates(self, draw, cnh_request):
+        """
+        Aplica os dados da CNH usando as coordenadas definidas na matriz.
+        
+        Args:
+            draw: Objeto ImageDraw
+            cnh_request: Objeto CNHRequest com dados
+        """
+        try:
+            # Nome completo na posição especificada (128.5, 149.5)
+            nome_completo = cnh_request.nome_completo or ""
+            if nome_completo:
+                coord = CNH_COORDINATES["nome_completo"]
+                font_config = FONT_CONFIGS["nome_completo"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, nome_completo.upper(), fill=font_config["color"], font=font)
+            
+            # Número da habilitação na posição especificada (67.5, 465)
+            numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id:011d}"
+            if numero_habilitacao:
+                coord = CNH_COORDINATES["numero_habilitacao"]
+                font_config = FONT_CONFIGS["numero_habilitacao"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, numero_habilitacao, fill=font_config["color"], font=font)
+            
+            # Primeira habilitação
+            if cnh_request.primeira_habilitacao:
+                primeira_hab = cnh_request.primeira_habilitacao.strftime("%d%m%Y")
+                coord = CNH_COORDINATES["primeira_habilitacao"]
+                font_config = FONT_CONFIGS["primeira_habilitacao"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, primeira_hab, fill=font_config["color"], font=font)
+            
+            # Data de nascimento
+            if cnh_request.data_nascimento:
+                data_nasc = cnh_request.data_nascimento.strftime("%d%m%Y")
+                coord = CNH_COORDINATES["data_nascimento"]
+                font_config = FONT_CONFIGS["data_nascimento"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, data_nasc, fill=font_config["color"], font=font)
+            
+            # Data de emissão
+            if cnh_request.data_emissao:
+                data_emissao = cnh_request.data_emissao.strftime("%d%m%Y")
+            else:
+                data_emissao = cnh_request.created_at.strftime("%d%m%Y")
+            coord = CNH_COORDINATES["data_emissao"]
+            font_config = FONT_CONFIGS["data_emissao"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, data_emissao, fill=font_config["color"], font=font)
+            
+            # Data de validade
+            if cnh_request.validade:
+                data_validade = cnh_request.validade.strftime("%d%m%Y")
+            else:
+                from datetime import timedelta
+                data_validade = (cnh_request.created_at + timedelta(days=365*5)).strftime("%d%m%Y")
+            coord = CNH_COORDINATES["validade"]
+            font_config = FONT_CONFIGS["validade"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, data_validade, fill=font_config["color"], font=font)
+            
+            # ACC
+            acc = cnh_request.acc or "NAO"
+            acc_text = "S" if acc == "SIM" else "N"
+            coord = CNH_COORDINATES["acc"]
+            font_config = FONT_CONFIGS["acc"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, acc_text, fill=font_config["color"], font=font)
+            
+            # Categoria
+            categoria = cnh_request.categoria_habilitacao or "B"
+            coord = CNH_COORDINATES["categoria"]
+            font_config = FONT_CONFIGS["categoria"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, categoria, fill=font_config["color"], font=font)
+            
+            # Documento de identidade
+            doc_numero = cnh_request.doc_identidade_numero or ""
+            doc_orgao = cnh_request.doc_identidade_orgao or "SSP"
+            doc_uf = cnh_request.doc_identidade_uf or "SP"
+            if doc_numero:
+                doc_completo = f"{doc_numero} {doc_orgao} {doc_uf}"
+                coord = CNH_COORDINATES["doc_identidade"]
+                font_config = FONT_CONFIGS["doc_identidade"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, doc_completo, fill=font_config["color"], font=font)
+            
+            # CPF
+            cpf = cnh_request.cpf or ""
+            if cpf:
+                coord = CNH_COORDINATES["cpf"]
+                font_config = FONT_CONFIGS["cpf"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, cpf, fill=font_config["color"], font=font)
+            
+            # Número de registro
+            numero_registro = cnh_request.numero_registro or f"{cnh_request.id:011d}"
+            coord = CNH_COORDINATES["numero_registro"]
+            font_config = FONT_CONFIGS["numero_registro"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, numero_registro, fill=font_config["color"], font=font)
+            
+            # Nacionalidade
+            nacionalidade = cnh_request.nacionalidade or "BRASILEIRA"
+            coord = CNH_COORDINATES["nacionalidade"]
+            font_config = FONT_CONFIGS["nacionalidade"]
+            font = self._get_font(font_config["size"])
+            draw.text(coord, nacionalidade, fill=font_config["color"], font=font)
+            
+            # Filiação (nome da mãe)
+            nome_mae = cnh_request.nome_mae or ""
+            if nome_mae:
+                coord = CNH_COORDINATES["filiacao"]
+                font_config = FONT_CONFIGS["filiacao"]
+                font = self._get_font(font_config["size"])
+                draw.text(coord, nome_mae.upper(), fill=font_config["color"], font=font)
+                
+            logger.info("Dados aplicados com sucesso usando coordenadas da matriz")
+            
+        except Exception as e:
+            logger.error(f"Erro ao aplicar dados com coordenadas: {str(e)}")
+            raise e
+    
+    def _get_font(self, size):
+        """
+        Retorna fonte com tamanho especificado.
+        
+        Args:
+            size: Tamanho da fonte
+            
+        Returns:
+            ImageFont: Objeto de fonte
+        """
+        try:
+            # Tentar usar Arial
+            return ImageFont.truetype("arial.ttf", size)
+        except:
+            try:
+                # Tentar fonte personalizada
+                font_path = os.path.join(self.FONTS_DIR, "arial.ttf")
+                if os.path.exists(font_path):
+                    return ImageFont.truetype(font_path, size)
+            except:
+                pass
+            # Fallback para fonte padrão
+            return ImageFont.load_default()
     
     def _draw_header(self, draw, cnh_request):
         """Desenha cabeçalho da CNH."""

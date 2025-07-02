@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # static/cnh_matriz/coordinates.py
 """
 Matriz de coordenadas para posicionamento de elementos na CNH.
@@ -22,11 +23,13 @@ CNH_COORDINATES = {
     "doc_identidade": (317, 264),
     "orgao_emissor": (483, 253),
     "uf_emissor": (483, 253),
-    "cpf": (361, 293),
-    "numero_registro": (503, 293),
+    "cpf": (315, 305),
+    "numero_registro": (450, 305),
     "cat_hab": (581, 308), # oque é isso ?
-    "nacionalidade": (348, 333),
-    "filiacao": (483, 373),
+    "nacionalidade": (317, 343),
+    "filiacao": (317, 385),
+    "nome_pai": (317, 385),      # Primeira linha - pai
+    "nome_mae": (317, 400),      # Segunda linha - mãe (15px abaixo)
     "assinatura_portador": (204, 477)
 }
 
@@ -47,6 +50,8 @@ FONT_CONFIGS = {
     "cat_hab": {"size": 10, "color": (0, 0, 0)},
     "nacionalidade": {"size": 10, "color": (0, 0, 0)},
     "filiacao": {"size": 9, "color": (0, 0, 0)},
+    "nome_pai": {"size": 9, "color": (0, 0, 0)},
+    "nome_mae": {"size": 9, "color": (0, 0, 0)},
     "assinatura_portador": {"size": 10, "color": (0, 0, 0)}
 }
 

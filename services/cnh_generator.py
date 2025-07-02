@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # services/cnh_generator.py
 from PIL import Image, ImageDraw, ImageFont
 import os
@@ -211,9 +212,20 @@ class CNHImageGenerator:
             nacionalidade = cnh_request.nacionalidade or "BRASILEIRA"
             draw_field_if_exists("nacionalidade", nacionalidade)
             
-            # Filiação (nome da mãe)
+            # Filiação (pai e mãe em linhas separadas)
+            nome_pai = cnh_request.nome_pai or ""
             nome_mae = cnh_request.nome_mae or ""
-            draw_field_if_exists("filiacao", nome_mae.upper())
+            
+            # Se tem pai e mãe, desenha os dois
+            if nome_pai and nome_mae:
+                draw_field_if_exists("nome_pai", nome_pai.upper())  # Primeira linha
+                draw_field_if_exists("nome_mae", nome_mae.upper())  # Segunda linha
+            # Se só tem mãe, coloca ela na primeira linha (posição do pai)
+            elif nome_mae:
+                draw_field_if_exists("nome_pai", nome_mae.upper())  # Mãe na posição do pai
+            # Se só tem pai (raro), coloca na primeira linha
+            elif nome_pai:
+                draw_field_if_exists("nome_pai", nome_pai.upper())
                 
             logger.info("Dados aplicados com sucesso usando coordenadas da matriz")
             

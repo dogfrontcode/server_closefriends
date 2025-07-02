@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # controllers/cnh.py
 from flask import Blueprint, request, jsonify, session, send_file
 from models.cnh_request import CNHRequest
@@ -43,9 +44,10 @@ def gerar_nome_aleatorio():
     nomes = [
         'João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Mariana', 'Lucas', 'Juliana',
         'Bruno', 'Fernanda', 'Rafael', 'Camila', 'Gustavo', 'Beatriz', 'Felipe',
-        'Larissa', 'Diego', 'Amanda', 'Thiago', 'Carla', 'Vinicius', 'Renata',
-        'Rodrigo', 'Patricia', 'Marcelo', 'Daniela', 'André', 'Vanessa', 'Gabriel',
-        'Priscila', 'Leonardo', 'Tatiana', 'Fabio', 'Monica', 'Ricardo', 'Sandra'
+        'Larissa', 'Diego', 'Amanda', 'Thiago', 'Carla', 'Vinícius', 'Renata',
+        'Rodrigo', 'Patrícia', 'Marcelo', 'Daniela', 'André', 'Vanessa', 'Gabriel',
+        'Priscila', 'Leonardo', 'Tatiana', 'Fábio', 'Mônica', 'Ricardo', 'Sandra',
+        'José', 'Antônio', 'Francisco', 'Luís', 'Paulo', 'César', 'Ângela', 'Cláudia'
     ]
     
     sobrenomes = [
@@ -89,10 +91,17 @@ def gerar_dados_cnh_aleatorios():
     categorias = ['A', 'B', 'C', 'D', 'E', 'AB', 'AC', 'AD', 'AE']
     
     nomes_mae = [
-        'Maria Silva Santos', 'Ana Oliveira Costa', 'Francisca Lima Souza', 'Antonia Ferreira Alves',
+        'Maria Silva Santos', 'Ana Oliveira Costa', 'Francisca Lima Souza', 'Antônia Ferreira Alves',
         'Conceição Pereira Gomes', 'Rosa Santos Lima', 'Josefa Rodrigues Silva', 'Helena Costa Oliveira',
-        'Isabel Souza Ferreira', 'Carmen Alves Pereira', 'Lucia Santos Gomes', 'Terezinha Lima Costa',
-        'Aparecida Silva Souza', 'Margarida Oliveira Santos', 'Sebastiana Costa Lima'
+        'Isabel Souza Ferreira', 'Carmen Alves Pereira', 'Lúcia Santos Gomes', 'Terezinha Lima Costa',
+        'Aparecida Silva Souza', 'Margarida Oliveira Santos', 'Sebastiana Costa Lima', 'Cláudia Martins Rocha'
+    ]
+    
+    nomes_pai = [
+        'João Silva Santos', 'Carlos Oliveira Costa', 'Antônio Lima Souza', 'José Ferreira Alves',
+        'Francisco Pereira Gomes', 'Manuel Santos Lima', 'Pedro Rodrigues Silva', 'Paulo Costa Oliveira',
+        'Luís Souza Ferreira', 'Roberto Alves Pereira', 'Eduardo Santos Gomes', 'Ricardo Lima Costa',
+        'Fernando Silva Souza', 'Marcos Oliveira Santos', 'Alexandre Costa Lima', 'César Barbosa Fernandes'
     ]
     
     data_nascimento = gerar_data_nascimento_aleatoria()
@@ -112,6 +121,7 @@ def gerar_dados_cnh_aleatorios():
         'categoria_habilitacao': random.choice(categorias),
         'primeira_habilitacao': data_nascimento.replace(year=data_nascimento.year + random.randint(18, 25)),
         'nome_mae': random.choice(nomes_mae),
+        'nome_pai': random.choice(nomes_pai) if random.random() < 0.8 else None,  # 80% chance de ter pai
         'nacionalidade': 'BRASILEIRA',
         'uf_cnh': uf_escolhida,
         'local_municipio': cidade_escolhida,

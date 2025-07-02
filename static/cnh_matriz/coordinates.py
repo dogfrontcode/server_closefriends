@@ -30,7 +30,8 @@ CNH_COORDINATES = {
     "filiacao": (317, 385),
     "nome_pai": (317, 385),      # Primeira linha - pai
     "nome_mae": (317, 400),      # Segunda linha - mãe (15px abaixo)
-    "assinatura_portador": (204, 477)
+    "assinatura_portador": (204, 477),
+    "foto_rg": (121, 180)  # Área para imagem do RG
 }
 
 # Configurações de fonte para cada campo
@@ -58,6 +59,20 @@ FONT_CONFIGS = {
 # Dimensões do template
 TEMPLATE_WIDTH = 700
 TEMPLATE_HEIGHT = 440
+
+# Configurações da área da foto 3x4 da CNH (imagem do cliente)
+FOTO_3X4_AREA = {
+    "position": (121, 180),
+    "width": 169,
+    "height": 237
+}
+
+# Configurações da área da assinatura do portador (imagem do cliente)
+ASSINATURA_AREA = {
+    "position": (120, 430),  # Ajustado para ficar dentro da imagem (496-50=446, usando 430)
+    "width": 168,
+    "height": 50
+}
 
 # Caminhos dos arquivos
 TEMPLATE_PATH = "static/cnh_matriz/front-cnh.png"

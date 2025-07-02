@@ -2109,12 +2109,24 @@
 
         async function generateCNH(formData) {
             try {
+                // Se formData for um objeto, converter para FormData para suportar arquivos
+                let requestBody;
+                let headers = {};
+                
+                if (formData instanceof FormData) {
+                    // Já é FormData, enviar diretamente
+                    requestBody = formData;
+                    // Não definir Content-Type para FormData (browser define automaticamente)
+                } else {
+                    // É objeto JavaScript, converter para JSON
+                    headers['Content-Type'] = 'application/json';
+                    requestBody = JSON.stringify(formData);
+                }
+                
                 const response = await fetch('/api/cnh/generate', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
+                    headers: headers,
+                    body: requestBody
                 });
                 
                 const result = await response.json();
@@ -3069,12 +3081,20 @@
                 cnhForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
-                    // Get form data
+                    // Get form data (mantém como FormData para suportar arquivos)
                     const formData = new FormData(cnhForm);
-                    const cnhData = Object.fromEntries(formData.entries());
                     
-                    // Validate form
-                    const errors = validateCNHForm(cnhData);
+                    // Para validação, converter para objeto (sem arquivos)
+                    const cnhDataForValidation = {};
+                    for (let [key, value] of formData.entries()) {
+                        // Pular campos de arquivo na validação
+                        if (key !== 'foto_3x4' && key !== 'assinatura') {
+                            cnhDataForValidation[key] = value;
+                        }
+                    }
+                    
+                    // Validate form (apenas dados de texto)
+                    const errors = validateCNHForm(cnhDataForValidation);
                     if (errors.length > 0) {
                         showGenerationStatus('error', 'Dados inválidos', errors[0]);
                         return;
@@ -3087,8 +3107,8 @@
                     
                     showGenerationStatus('processing', 'Processando', 'Validando dados e gerando CNH...');
                     
-                    // Generate CNH
-                    const result = await generateCNH(cnhData);
+                    // Generate CNH (enviar FormData com arquivos)
+                    const result = await generateCNH(formData);
                     
                     // Re-enable form
                     submitBtn.disabled = false;

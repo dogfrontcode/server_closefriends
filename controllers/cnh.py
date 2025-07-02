@@ -47,7 +47,12 @@ def gerar_nome_aleatorio():
         'Larissa', 'Diego', 'Amanda', 'Thiago', 'Carla', 'Vinícius', 'Renata',
         'Rodrigo', 'Patrícia', 'Marcelo', 'Daniela', 'André', 'Vanessa', 'Gabriel',
         'Priscila', 'Leonardo', 'Tatiana', 'Fábio', 'Mônica', 'Ricardo', 'Sandra',
-        'José', 'Antônio', 'Francisco', 'Luís', 'Paulo', 'César', 'Ângela', 'Cláudia'
+        'José', 'Antônio', 'Francisco', 'Luís', 'Paulo', 'César', 'Ângela', 'Cláudia',
+        'Adriana', 'Aline', 'Álvaro', 'Ângelo', 'Antônia', 'Bárbara', 'Bruna', 'Caio',
+        'Cátia', 'Célia', 'Cristóvão', 'Débora', 'Édson', 'Érica', 'Fabrícia', 'Fátima',
+        'Gérson', 'Gláucia', 'Hélio', 'Inês', 'Íris', 'Jéssica', 'Jônatas', 'Júlia',
+        'Lúcio', 'Márcio', 'Mônica', 'Nádia', 'Óscar', 'Patrícia', 'Raúl', 'Sônia',
+        'Tânia', 'Válter', 'Vítor', 'Yágara', 'Zélia'
     ]
     
     sobrenomes = [
@@ -55,7 +60,9 @@ def gerar_nome_aleatorio():
         'Pereira', 'Lima', 'Gomes', 'Ribeiro', 'Carvalho', 'Almeida', 'Lopes',
         'Monteiro', 'Araújo', 'Fernandes', 'Rocha', 'Dias', 'Moreira', 'Nunes',
         'Mendes', 'Ramos', 'Vieira', 'Rezende', 'Barbosa', 'Martins', 'Nascimento',
-        'Costa', 'Pinto', 'Moura', 'Cavalcanti', 'Teixeira', 'Correia', 'Farias'
+        'Costa', 'Pinto', 'Moura', 'Cavalcanti', 'Teixeira', 'Correia', 'Farias',
+        'Gonçalves', 'Conceição', 'Gusmão', 'Espíndola', 'Gusmão', 'Brandão',
+        'Leão', 'Magalhães', 'Sebastião', 'Ângelo', 'Cristóvão', 'Estêvão'
     ]
     
     nome = random.choice(nomes)
@@ -94,14 +101,18 @@ def gerar_dados_cnh_aleatorios():
         'Maria Silva Santos', 'Ana Oliveira Costa', 'Francisca Lima Souza', 'Antônia Ferreira Alves',
         'Conceição Pereira Gomes', 'Rosa Santos Lima', 'Josefa Rodrigues Silva', 'Helena Costa Oliveira',
         'Isabel Souza Ferreira', 'Carmen Alves Pereira', 'Lúcia Santos Gomes', 'Terezinha Lima Costa',
-        'Aparecida Silva Souza', 'Margarida Oliveira Santos', 'Sebastiana Costa Lima', 'Cláudia Martins Rocha'
+        'Aparecida Silva Souza', 'Margarida Oliveira Santos', 'Sebastiana Costa Lima', 'Cláudia Martins Rocha',
+        'Inês Gonçalves Silva', 'Ângela Magalhães Costa', 'Fátima Brandão Santos', 'Sônia Araújo Lima',
+        'Tânia Conceição Oliveira', 'Nádia Espíndola Souza', 'Débora Gusmão Silva', 'Cátia Leão Pereira'
     ]
     
     nomes_pai = [
         'João Silva Santos', 'Carlos Oliveira Costa', 'Antônio Lima Souza', 'José Ferreira Alves',
         'Francisco Pereira Gomes', 'Manuel Santos Lima', 'Pedro Rodrigues Silva', 'Paulo Costa Oliveira',
         'Luís Souza Ferreira', 'Roberto Alves Pereira', 'Eduardo Santos Gomes', 'Ricardo Lima Costa',
-        'Fernando Silva Souza', 'Marcos Oliveira Santos', 'Alexandre Costa Lima', 'César Barbosa Fernandes'
+        'Fernando Silva Souza', 'Marcos Oliveira Santos', 'Alexandre Costa Lima', 'César Barbosa Fernandes',
+        'Álvaro Gonçalves Silva', 'Édson Magalhães Costa', 'Hélio Brandão Santos', 'Márcio Araújo Lima',
+        'Vítor Conceição Oliveira', 'Raúl Espíndola Souza', 'Lúcio Gusmão Silva', 'Óscar Leão Pereira'
     ]
     
     data_nascimento = gerar_data_nascimento_aleatoria()
@@ -144,21 +155,41 @@ def require_auth(f):
 @require_auth
 def generate_cnh():
     """
-    Endpoint para gerar nova CNH.
+    Endpoint para gerar nova CNH com suporte a upload de arquivos.
     
-    Body (JSON):
+    Aceita tanto JSON quanto FormData com arquivos.
+    
+    Form Data ou JSON:
     {
         "nome_completo": "João Silva",
         "cpf": "123.456.789-09", 
-        "rg": "12.345.678-9",
         "data_nascimento": "1990-01-01",
-        "categoria": "B"
+        "categoria": "B",
+        "foto_3x4": (arquivo),
+        "assinatura": (arquivo)
     }
     """
     try:
         user_id = session['user_id']
-        dados = request.get_json()
         
+        # Verificar se é FormData (com arquivos) ou JSON
+        logger.info(f"Content-Type recebido: {request.content_type}")
+        
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # FormData com possíveis arquivos
+            dados = request.form.to_dict()
+            files = request.files
+            logger.info(f"✅ FormData detectado - User ID: {user_id}")
+            logger.info(f"📄 Dados do form: {list(dados.keys())}")
+            logger.info(f"📁 Arquivos recebidos: {list(files.keys())}")
+            for filename, file_obj in files.items():
+                logger.info(f"   📷 {filename}: {file_obj.filename} ({file_obj.content_type})")
+        else:
+            # JSON tradicional
+            dados = request.get_json()
+            files = {}
+            logger.info(f"📝 JSON tradicional detectado - User ID: {user_id}")
+            
         if not dados:
             return jsonify({'error': 'Dados não fornecidos'}), 400
         
@@ -180,6 +211,12 @@ def generate_cnh():
         if not success:
             logger.error(f"Erro ao criar CNH request - User ID: {user_id}, Erro: {error_msg}")
             return jsonify({'error': error_msg}), 400
+        
+        # Processar arquivos uploadados
+        upload_success, upload_error = _process_uploaded_files(cnh_request, files)
+        if not upload_success:
+            logger.warning(f"Erro no upload de arquivos - CNH ID: {cnh_request.id}, Erro: {upload_error}")
+            # Continuar mesmo com erro no upload (arquivos são opcionais)
         
         # Gerar imagem em background (assíncrono)
         def generate_async():
@@ -817,4 +854,88 @@ def _generate_random_cnh_internal(async_generation=True):
         
     except Exception as e:
         logger.error(f"Erro na geração de CNH aleatória: {str(e)}")
-        return jsonify({'error': f'Erro interno: {str(e)}'}), 500 
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
+# ==================== FUNÇÕES AUXILIARES ====================
+
+def _process_uploaded_files(cnh_request, files):
+    """
+    Processa arquivos uploadados (foto 3x4 e assinatura) e salva no sistema.
+    
+    Args:
+        cnh_request: Objeto CNHRequest
+        files: Dicionário de arquivos do request.files
+        
+    Returns:
+        tuple: (success: bool, error_message: str)
+    """
+    try:
+        import uuid
+        from werkzeug.utils import secure_filename
+        
+        # Diretório para uploads
+        upload_dir = os.path.join('static', 'uploads', 'cnh', str(cnh_request.id))
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Extensões permitidas para imagens
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+        
+        def is_allowed_file(filename):
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+        
+        files_processed = 0
+        
+        # Processar foto 3x4 (RG)
+        if 'foto_3x4' in files and files['foto_3x4'].filename:
+            foto_file = files['foto_3x4']
+            
+            if is_allowed_file(foto_file.filename):
+                # Gerar nome único para o arquivo
+                filename = secure_filename(foto_file.filename)
+                extension = filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"foto_3x4_{uuid.uuid4().hex[:8]}.{extension}"
+                
+                # Salvar arquivo
+                foto_path = os.path.join(upload_dir, unique_filename)
+                foto_file.save(foto_path)
+                
+                # Atualizar CNH request com caminho da foto
+                cnh_request.foto_3x4_path = foto_path
+                files_processed += 1
+                
+                logger.info(f"Foto 3x4 salva - CNH ID: {cnh_request.id}, Arquivo: {foto_path}")
+            else:
+                logger.warning(f"Arquivo de foto 3x4 inválido - CNH ID: {cnh_request.id}, Arquivo: {foto_file.filename}")
+        
+        # Processar assinatura
+        if 'assinatura' in files and files['assinatura'].filename:
+            assinatura_file = files['assinatura']
+            
+            if is_allowed_file(assinatura_file.filename):
+                # Gerar nome único para o arquivo
+                filename = secure_filename(assinatura_file.filename)
+                extension = filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"assinatura_{uuid.uuid4().hex[:8]}.{extension}"
+                
+                # Salvar arquivo
+                assinatura_path = os.path.join(upload_dir, unique_filename)
+                assinatura_file.save(assinatura_path)
+                
+                # Atualizar CNH request com caminho da assinatura
+                cnh_request.assinatura_path = assinatura_path
+                files_processed += 1
+                
+                logger.info(f"Assinatura salva - CNH ID: {cnh_request.id}, Arquivo: {assinatura_path}")
+            else:
+                logger.warning(f"Arquivo de assinatura inválido - CNH ID: {cnh_request.id}, Arquivo: {assinatura_file.filename}")
+        
+        # Salvar alterações no banco
+        if files_processed > 0:
+            db.session.commit()
+            logger.info(f"Arquivos processados com sucesso - CNH ID: {cnh_request.id}, Total: {files_processed}")
+        
+        return True, f"{files_processed} arquivo(s) processado(s)"
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar arquivos uploadados - CNH ID: {cnh_request.id}, Erro: {str(e)}")
+        return False, f"Erro no upload: {str(e)}" 

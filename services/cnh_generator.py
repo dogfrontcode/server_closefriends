@@ -7,7 +7,7 @@ import logging
 import uuid
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from static.cnh_matriz.coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH
+from static.cnh_matriz.coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
 
 logger = logging.getLogger(__name__)
 
@@ -38,35 +38,18 @@ class CNHImageGenerator:
         os.makedirs(self.FONTS_DIR, exist_ok=True)
     
     def _load_fonts(self):
-        """Carrega fontes para uso na imagem."""
+        """Carrega fontes para uso na imagem com suporte UTF-8."""
         try:
-            # Tentar carregar fonte personalizada (se existir)
-            title_font_path = os.path.join(self.FONTS_DIR, "arial_bold.ttf")
-            if os.path.exists(title_font_path):
-                self.title_font = ImageFont.truetype(title_font_path, 24)
-                self.header_font = ImageFont.truetype(title_font_path, 32)
-            else:
-                # Usar fonte padrão do sistema
-                try:
-                    self.title_font = ImageFont.truetype("arial.ttf", 24)
-                    self.header_font = ImageFont.truetype("arial.ttf", 32)
-                except:
-                    # Fallback para fonte padrão do Pillow
-                    self.title_font = ImageFont.load_default()
-                    self.header_font = ImageFont.load_default()
-            
-            # Fonte para dados
-            try:
-                self.data_font = ImageFont.truetype("arial.ttf", 18)
-                self.small_font = ImageFont.truetype("arial.ttf", 14)
-            except:
-                self.data_font = ImageFont.load_default()
-                self.small_font = ImageFont.load_default()
+            # Usar o método melhorado para carregar fontes UTF-8
+            self.title_font = self._get_font(24)
+            self.header_font = self._get_font(32)
+            self.data_font = self._get_font(18)
+            self.small_font = self._get_font(14)
                 
-            logger.info("Fontes carregadas com sucesso")
+            logger.info("Fontes UTF-8 carregadas com sucesso")
             
         except Exception as e:
-            logger.warning(f"Erro ao carregar fontes: {e}. Usando fonte padrão.")
+            logger.warning(f"Erro ao carregar fontes UTF-8: {e}. Usando fonte padrão.")
             # Usar fontes padrão
             self.title_font = ImageFont.load_default()
             self.header_font = ImageFont.load_default()
@@ -103,6 +86,10 @@ class CNHImageGenerator:
             # Aplicar dados usando coordenadas da matriz
             try:
                 self._apply_data_with_coordinates(draw, cnh_request)
+                # Processar foto 3x4 se fornecida
+                self._process_foto_3x4(image, cnh_request)
+                # Processar assinatura se fornecida
+                self._process_signature(image, cnh_request)
             except Exception as e:
                 logger.error(f"Erro ao aplicar coordenadas: {str(e)}")
                 # Fallback: desenhar apenas o nome no centro para testar
@@ -235,7 +222,7 @@ class CNHImageGenerator:
     
     def _get_font(self, size):
         """
-        Retorna fonte com tamanho especificado.
+        Retorna fonte com tamanho especificado que suporte UTF-8.
         
         Args:
             size: Tamanho da fonte
@@ -243,19 +230,65 @@ class CNHImageGenerator:
         Returns:
             ImageFont: Objeto de fonte
         """
-        try:
-            # Tentar usar Arial
-            return ImageFont.truetype("arial.ttf", size)
-        except:
+        # Lista de fontes que suportam UTF-8, em ordem de preferência
+        font_candidates = [
+            # Fontes do macOS
+            "/System/Library/Fonts/Arial.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/Library/Fonts/Arial.ttf",
+            # Fontes personalizadas
+            os.path.join(self.FONTS_DIR, "arial.ttf"),
+            os.path.join(self.FONTS_DIR, "DejaVuSans.ttf"),
+            # Fontes do sistema Linux
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            # Fontes do Windows
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/calibri.ttf",
+            # Tentar pelo nome
+            "arial.ttf",
+            "Arial",
+            "DejaVu Sans",
+            "Liberation Sans"
+        ]
+        
+        for font_path in font_candidates:
             try:
-                # Tentar fonte personalizada
-                font_path = os.path.join(self.FONTS_DIR, "arial.ttf")
                 if os.path.exists(font_path):
-                    return ImageFont.truetype(font_path, size)
-            except:
-                pass
-            # Fallback para fonte padrão
-            return ImageFont.load_default()
+                    font = ImageFont.truetype(font_path, size)
+                    # Testar se a fonte suporta caracteres brasileiros
+                    self._test_font_utf8(font)
+                    return font
+                else:
+                    # Tentar carregar pelo nome (funciona em alguns sistemas)
+                    font = ImageFont.truetype(font_path, size)
+                    self._test_font_utf8(font)
+                    return font
+            except Exception:
+                continue
+                
+        # Fallback para fonte padrão
+        logger.warning(f"Nenhuma fonte UTF-8 encontrada para tamanho {size}. Usando fonte padrão.")
+        return ImageFont.load_default()
+    
+    def _test_font_utf8(self, font):
+        """
+        Testa se a fonte suporta caracteres UTF-8 brasileiros.
+        
+        Args:
+            font: Objeto ImageFont
+            
+        Raises:
+            Exception: Se a fonte não suportar UTF-8
+        """
+        test_chars = "ÃÇáéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ"
+        try:
+            # Criar imagem temporária para testar
+            temp_img = Image.new('RGB', (100, 50), (255, 255, 255))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((10, 10), test_chars, font=font, fill=(0, 0, 0))
+        except Exception as e:
+            raise Exception(f"Fonte não suporta UTF-8: {e}")
     
     def _draw_rotated_text(self, draw, text, position, font, color, rotation=90):
         """
@@ -316,6 +349,116 @@ class CNHImageGenerator:
             logger.error(f"Erro ao desenhar texto rotacionado: {str(e)}")
             # Fallback: desenhar texto normal se a rotação falhar
             draw.text(position, text, font=font, fill=color)
+    
+    def _process_foto_3x4(self, main_image, cnh_request):
+        """
+        Processa e insere foto 3x4 na CNH se fornecida.
+        
+        Args:
+            main_image: Imagem principal da CNH
+            cnh_request: Objeto CNHRequest com dados
+        """
+        try:
+            # Verificar se há caminho para foto 3x4
+            if not hasattr(cnh_request, 'foto_3x4_path') or not cnh_request.foto_3x4_path:
+                logger.debug("Nenhuma foto 3x4 fornecida")
+                return
+                
+            foto_path = cnh_request.foto_3x4_path
+            if not os.path.exists(foto_path):
+                logger.warning(f"Foto 3x4 não encontrada: {foto_path}")
+                return
+            
+            # Carregar e redimensionar foto 3x4
+            foto_3x4 = Image.open(foto_path)
+            foto_width = FOTO_3X4_AREA["width"]
+            foto_height = FOTO_3X4_AREA["height"]
+            
+            # Redimensionar mantendo proporção e cortando se necessário
+            foto_3x4 = self._resize_and_crop_image(foto_3x4, foto_width, foto_height)
+            
+            # Colar foto na posição correta
+            position = FOTO_3X4_AREA["position"]
+            main_image.paste(foto_3x4, position)
+            
+            logger.info(f"Foto 3x4 inserida em {position} com dimensões {foto_width}x{foto_height}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar foto 3x4: {str(e)}")
+    
+    def _process_signature(self, main_image, cnh_request):
+        """
+        Processa e insere assinatura na CNH se fornecida.
+        
+        Args:
+            main_image: Imagem principal da CNH
+            cnh_request: Objeto CNHRequest com dados
+        """
+        try:
+            # Verificar se há caminho para assinatura
+            if not hasattr(cnh_request, 'assinatura_path') or not cnh_request.assinatura_path:
+                return
+                
+            assinatura_path = cnh_request.assinatura_path
+            if not os.path.exists(assinatura_path):
+                logger.warning(f"Assinatura não encontrada: {assinatura_path}")
+                return
+            
+            # Carregar e redimensionar assinatura
+            signature = Image.open(assinatura_path)
+            sig_width = ASSINATURA_AREA["width"]
+            sig_height = ASSINATURA_AREA["height"]
+            
+            # Redimensionar mantendo proporção
+            signature = self._resize_and_crop_image(signature, sig_width, sig_height)
+            
+            # Se a assinatura tiver transparência, preservar
+            if signature.mode == 'RGBA':
+                main_image.paste(signature, ASSINATURA_AREA["position"], signature)
+            else:
+                main_image.paste(signature, ASSINATURA_AREA["position"])
+            
+            logger.info(f"Assinatura inserida em {ASSINATURA_AREA['position']} com dimensões {sig_width}x{sig_height}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar assinatura: {str(e)}")
+    
+    def _resize_and_crop_image(self, image, target_width, target_height):
+        """
+        Redimensiona e corta imagem para o tamanho exato mantendo proporção.
+        
+        Args:
+            image: Imagem PIL
+            target_width: Largura desejada
+            target_height: Altura desejada
+            
+        Returns:
+            Image: Imagem redimensionada e cortada
+        """
+        # Calcular proporções
+        img_ratio = image.width / image.height
+        target_ratio = target_width / target_height
+        
+        if img_ratio > target_ratio:
+            # Imagem é mais larga - cortar largura
+            new_height = target_height
+            new_width = int(target_height * img_ratio)
+            resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Cortar centro
+            left = (new_width - target_width) // 2
+            cropped = resized.crop((left, 0, left + target_width, target_height))
+        else:
+            # Imagem é mais alta - cortar altura
+            new_width = target_width
+            new_height = int(target_width / img_ratio)
+            resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Cortar centro
+            top = (new_height - target_height) // 2
+            cropped = resized.crop((0, top, target_width, top + target_height))
+        
+        return cropped
     
     def _draw_header(self, draw, cnh_request):
         """Desenha cabeçalho da CNH."""

@@ -2,16 +2,122 @@
 from flask import Blueprint, request, jsonify, session, send_file
 from models.cnh_request import CNHRequest
 from models.user import User
+from models import db
 from services.cnh_generator import gerar_cnh_basica
 from datetime import datetime, timedelta
 import threading
 import logging
 import os
+import random
+import string
 
 logger = logging.getLogger(__name__)
 
 # Blueprint para rotas CNH
 cnh_bp = Blueprint('cnh', __name__, url_prefix='/api/cnh')
+
+# ==================== FUNÇÕES AUXILIARES PARA DADOS ALEATÓRIOS ====================
+
+def gerar_cpf_aleatorio():
+    """Gera um CPF válido aleatório."""
+    def calcular_digito(cpf, peso):
+        soma = sum(int(cpf[i]) * peso[i] for i in range(len(peso)))
+        resto = soma % 11
+        return 0 if resto < 2 else 11 - resto
+    
+    # Gera 9 primeiros dígitos
+    cpf = [random.randint(0, 9) for _ in range(9)]
+    
+    # Calcula os dígitos verificadores
+    cpf.append(calcular_digito(cpf, [10, 9, 8, 7, 6, 5, 4, 3, 2]))
+    cpf.append(calcular_digito(cpf, [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]))
+    
+    return ''.join(map(str, cpf))
+
+def gerar_rg_aleatorio():
+    """Gera um RG aleatório."""
+    return ''.join([str(random.randint(0, 9)) for _ in range(9)])
+
+def gerar_nome_aleatorio():
+    """Gera um nome completo aleatório."""
+    nomes = [
+        'João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Mariana', 'Lucas', 'Juliana',
+        'Bruno', 'Fernanda', 'Rafael', 'Camila', 'Gustavo', 'Beatriz', 'Felipe',
+        'Larissa', 'Diego', 'Amanda', 'Thiago', 'Carla', 'Vinicius', 'Renata',
+        'Rodrigo', 'Patricia', 'Marcelo', 'Daniela', 'André', 'Vanessa', 'Gabriel',
+        'Priscila', 'Leonardo', 'Tatiana', 'Fabio', 'Monica', 'Ricardo', 'Sandra'
+    ]
+    
+    sobrenomes = [
+        'Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves',
+        'Pereira', 'Lima', 'Gomes', 'Ribeiro', 'Carvalho', 'Almeida', 'Lopes',
+        'Monteiro', 'Araújo', 'Fernandes', 'Rocha', 'Dias', 'Moreira', 'Nunes',
+        'Mendes', 'Ramos', 'Vieira', 'Rezende', 'Barbosa', 'Martins', 'Nascimento',
+        'Costa', 'Pinto', 'Moura', 'Cavalcanti', 'Teixeira', 'Correia', 'Farias'
+    ]
+    
+    nome = random.choice(nomes)
+    sobrenome1 = random.choice(sobrenomes)
+    sobrenome2 = random.choice(sobrenomes)
+    
+    return f"{nome} {sobrenome1} {sobrenome2}"
+
+def gerar_data_nascimento_aleatoria():
+    """Gera uma data de nascimento aleatória (idade entre 18 e 80 anos)."""
+    hoje = datetime.now()
+    idade_min = 18
+    idade_max = 80
+    
+    ano_nascimento = hoje.year - random.randint(idade_min, idade_max)
+    mes = random.randint(1, 12)
+    dia = random.randint(1, 28)  # Evita problemas com dias inválidos
+    
+    return datetime(ano_nascimento, mes, dia).date()
+
+def gerar_dados_cnh_aleatorios():
+    """Gera um conjunto completo de dados aleatórios para CNH."""
+    cidades_brasileiras = [
+        'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza',
+        'Brasília', 'Curitiba', 'Recife', 'Porto Alegre', 'Manaus', 'Belém',
+        'Goiânia', 'Guarulhos', 'Campinas', 'São Luís', 'São Gonçalo', 'Maceió',
+        'Duque de Caxias', 'Natal', 'Teresina', 'Campo Grande', 'Nova Iguaçu',
+        'São Bernardo do Campo', 'João Pessoa', 'Santo André', 'Osasco'
+    ]
+    
+    ufs = ['SP', 'RJ', 'MG', 'BA', 'SC', 'RS', 'PR', 'GO', 'PE', 'CE', 'AM', 'PA', 'MA', 'PB', 'ES', 'MT', 'MS', 'AL', 'RN', 'PI', 'SE', 'RO', 'AC', 'AP', 'RR', 'TO', 'DF']
+    
+    categorias = ['A', 'B', 'C', 'D', 'E', 'AB', 'AC', 'AD', 'AE']
+    
+    nomes_mae = [
+        'Maria Silva Santos', 'Ana Oliveira Costa', 'Francisca Lima Souza', 'Antonia Ferreira Alves',
+        'Conceição Pereira Gomes', 'Rosa Santos Lima', 'Josefa Rodrigues Silva', 'Helena Costa Oliveira',
+        'Isabel Souza Ferreira', 'Carmen Alves Pereira', 'Lucia Santos Gomes', 'Terezinha Lima Costa',
+        'Aparecida Silva Souza', 'Margarida Oliveira Santos', 'Sebastiana Costa Lima'
+    ]
+    
+    data_nascimento = gerar_data_nascimento_aleatoria()
+    uf_escolhida = random.choice(ufs)
+    cidade_escolhida = random.choice(cidades_brasileiras)
+    
+    return {
+        'nome_completo': gerar_nome_aleatorio(),
+        'cpf': gerar_cpf_aleatorio(),
+        'doc_identidade_numero': gerar_rg_aleatorio(),
+        'doc_identidade_orgao': 'SSP',
+        'doc_identidade_uf': uf_escolhida,
+        'data_nascimento': data_nascimento,
+        'local_nascimento': cidade_escolhida,
+        'uf_nascimento': uf_escolhida,
+        'sexo_condutor': random.choice(['M', 'F']),
+        'categoria_habilitacao': random.choice(categorias),
+        'primeira_habilitacao': data_nascimento.replace(year=data_nascimento.year + random.randint(18, 25)),
+        'nome_mae': random.choice(nomes_mae),
+        'nacionalidade': 'BRASILEIRA',
+        'uf_cnh': uf_escolhida,
+        'local_municipio': cidade_escolhida,
+        'local_uf': uf_escolhida,
+        'acc': random.choice(['SIM', 'NAO'])
+    }
 
 def require_auth(f):
     """Middleware para verificar autenticação."""
@@ -479,4 +585,226 @@ def log_response(response):
     """Log de respostas dos endpoints CNH."""
     if request.endpoint and 'cnh' in request.endpoint:
         logger.info(f"CNH API Response - {request.method} {request.path} - Status: {response.status_code}")
-    return response 
+    return response
+
+# ==================== ENDPOINT PÚBLICO ====================
+
+@cnh_bp.route('/view/<int:cnh_id>', methods=['GET'])
+def view_cnh_public(cnh_id):
+    """
+    Endpoint público para visualizar CNH sem autenticação.
+    
+    Usage: GET /api/cnh/view/123
+    """
+    try:
+        # Buscar CNH por ID (sem filtrar por user_id)
+        cnh_request = CNHRequest.query.filter_by(id=cnh_id).first()
+        
+        if not cnh_request:
+            return jsonify({'error': 'CNH não encontrada'}), 404
+        
+        # Verificar se a CNH foi gerada com sucesso
+        if not cnh_request.can_download():
+            return jsonify({'error': 'CNH não está disponível'}), 400
+        
+        # Verificar se arquivo existe
+        if not os.path.exists(cnh_request.generated_image_path):
+            logger.error(f"Arquivo CNH não encontrado - ID: {cnh_id}, Path: {cnh_request.generated_image_path}")
+            return jsonify({'error': 'Arquivo da CNH não encontrado'}), 404
+        
+        # Log da visualização pública
+        logger.info(f"Visualização pública CNH - ID: {cnh_id}, Nome: {cnh_request.nome_completo}")
+        
+        # Retornar arquivo da CNH diretamente
+        return send_file(
+            cnh_request.generated_image_path,
+            mimetype='image/png',
+            as_attachment=False,  # Para exibir no navegador
+            download_name=f"CNH_{cnh_id}.png"
+        )
+        
+    except Exception as e:
+        logger.error(f"Erro na visualização pública - CNH ID: {cnh_id}, Erro: {str(e)}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
+@cnh_bp.route('/info/<int:cnh_id>', methods=['GET'])
+def get_cnh_info_public(cnh_id):
+    """
+    Endpoint público para obter informações básicas da CNH sem autenticação.
+    
+    Usage: GET /api/cnh/info/123
+    """
+    try:
+        # Buscar CNH por ID
+        cnh_request = CNHRequest.query.filter_by(id=cnh_id).first()
+        
+        if not cnh_request:
+            return jsonify({'error': 'CNH não encontrada'}), 404
+        
+        # Retornar apenas informações básicas (sem dados sensíveis)
+        cnh_info = {
+            'id': cnh_request.id,
+            'nome_completo': cnh_request.nome_completo,
+            'categoria_habilitacao': cnh_request.categoria_habilitacao,
+            'status': cnh_request.status,
+            'data_criacao': cnh_request.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+            'can_view': cnh_request.can_download(),
+            'image_url': f'/api/cnh/view/{cnh_id}' if cnh_request.can_download() else None
+        }
+        
+        # Log da consulta
+        logger.info(f"Consulta pública CNH info - ID: {cnh_id}")
+        
+        return jsonify({
+            'success': True,
+            'cnh': cnh_info
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro na consulta pública - CNH ID: {cnh_id}, Erro: {str(e)}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
+@cnh_bp.route('/generate-random', methods=['GET'])
+def generate_random_cnh():
+    """
+    Endpoint público para gerar CNH automaticamente com dados aleatórios (versão assíncrona).
+    
+    Usage: GET /api/cnh/generate-random
+    """
+    return _generate_random_cnh_internal(async_generation=True)
+
+@cnh_bp.route('/generate-random-sync', methods=['GET'])
+def generate_random_cnh_sync():
+    """
+    Endpoint público para gerar CNH automaticamente com dados aleatórios (versão síncrona).
+    
+    Usage: GET /api/cnh/generate-random-sync
+    
+    Aguarda a geração completa antes de retornar.
+    """
+    return _generate_random_cnh_internal(async_generation=False)
+
+def _generate_random_cnh_internal(async_generation=True):
+    """
+    Endpoint público para gerar CNH automaticamente com dados aleatórios.
+    
+    Usage: GET /api/cnh/generate-random
+    
+    Retorna:
+    - success: Se a geração foi bem-sucedida
+    - cnh_id: ID da CNH gerada
+    - image_url: URL para visualizar a CNH
+    - info_url: URL para obter informações da CNH
+    """
+    try:
+        # Gerar dados aleatórios
+        dados_aleatorios = gerar_dados_cnh_aleatorios()
+        
+        logger.info(f"Gerando CNH com dados aleatórios - Nome: {dados_aleatorios['nome_completo']}")
+        
+        # Criar usuário fictício ou usar um padrão para CNHs aleatórias
+        # Vamos usar user_id = 1 como padrão para CNHs públicas aleatórias
+        user_id_publico = 1
+        
+        # Verificar se o usuário existe, se não, criar um usuário padrão
+        user = User.query.get(user_id_publico)
+        if not user:
+            # Criar usuário padrão para CNHs públicas
+            user = User(
+                username='public_generator',
+                email='public@cnh.generator',
+                credits=999999  # Créditos ilimitados para geração pública
+            )
+            user.set_password('public123')
+            db.session.add(user)
+            db.session.commit()
+            logger.info("Usuário público criado para CNHs aleatórias")
+        
+        # Criar registro de CNH com dados aleatórios
+        cnh_request = CNHRequest(
+            user_id=user_id_publico,
+            nome_completo=dados_aleatorios['nome_completo'],
+            cpf=dados_aleatorios['cpf'],
+            doc_identidade_numero=dados_aleatorios['doc_identidade_numero'],
+            doc_identidade_orgao=dados_aleatorios['doc_identidade_orgao'],
+            doc_identidade_uf=dados_aleatorios['doc_identidade_uf'],
+            data_nascimento=dados_aleatorios['data_nascimento'],
+            local_nascimento=dados_aleatorios['local_nascimento'],
+            uf_nascimento=dados_aleatorios['uf_nascimento'],
+            sexo_condutor=dados_aleatorios['sexo_condutor'],
+            categoria_habilitacao=dados_aleatorios['categoria_habilitacao'],
+            primeira_habilitacao=dados_aleatorios['primeira_habilitacao'],
+            nome_mae=dados_aleatorios['nome_mae'],
+            nacionalidade=dados_aleatorios['nacionalidade'],
+            uf_cnh=dados_aleatorios['uf_cnh'],
+            local_municipio=dados_aleatorios['local_municipio'],
+            local_uf=dados_aleatorios['local_uf'],
+            acc=dados_aleatorios['acc']
+        )
+        
+        # Salvar no banco
+        db.session.add(cnh_request)
+        db.session.commit()
+        
+        logger.info(f"CNH aleatória criada no banco - ID: {cnh_request.id}")
+        
+        if async_generation:
+            # Gerar a imagem da CNH em background
+            def gerar_cnh_async():
+                from flask import current_app
+                try:
+                    with current_app.app_context():
+                        sucesso, caminho_imagem, erro = gerar_cnh_basica(cnh_request)
+                        if sucesso:
+                            logger.info(f"CNH aleatória gerada com sucesso - ID: {cnh_request.id}, Arquivo: {caminho_imagem}")
+                        else:
+                            logger.error(f"Erro na geração da CNH aleatória - ID: {cnh_request.id}, Erro: {erro}")
+                except Exception as e:
+                    logger.error(f"Erro na thread de geração - ID: {cnh_request.id}, Erro: {str(e)}")
+            
+            # Iniciar geração em background
+            thread = threading.Thread(target=gerar_cnh_async)
+            thread.daemon = True
+            thread.start()
+            
+            # Retornar resposta imediata com URLs
+            return jsonify({
+                'success': True,
+                'message': 'CNH aleatória criada! A imagem está sendo gerada...',
+                'cnh_id': cnh_request.id,
+                'nome_completo': cnh_request.nome_completo,
+                'cpf': cnh_request.cpf,
+                'categoria': cnh_request.categoria_habilitacao,
+                'image_url': f'/api/cnh/view/{cnh_request.id}',
+                'info_url': f'/api/cnh/info/{cnh_request.id}',
+                'status_check_url': f'/api/cnh/status/{cnh_request.id}',
+                'note': 'A imagem estará disponível em alguns segundos. Use image_url para visualizar.'
+            }), 201
+        else:
+            # Gerar a imagem sincronamente
+            try:
+                sucesso, caminho_imagem, erro = gerar_cnh_basica(cnh_request)
+                if sucesso:
+                    logger.info(f"CNH aleatória gerada com sucesso (sync) - ID: {cnh_request.id}, Arquivo: {caminho_imagem}")
+                    return jsonify({
+                        'success': True,
+                        'message': 'CNH aleatória gerada com sucesso!',
+                        'cnh_id': cnh_request.id,
+                        'nome_completo': cnh_request.nome_completo,
+                        'cpf': cnh_request.cpf,
+                        'categoria': cnh_request.categoria_habilitacao,
+                        'image_url': f'/api/cnh/view/{cnh_request.id}',
+                        'info_url': f'/api/cnh/info/{cnh_request.id}',
+                        'status': 'completed',
+                        'note': 'A imagem está pronta para visualização!'
+                    }), 201
+                else:
+                    logger.error(f"Erro na geração síncrona da CNH - ID: {cnh_request.id}, Erro: {erro}")
+                    return jsonify({'error': f'Erro na geração: {erro}'}), 500
+            except Exception as e:
+                logger.error(f"Erro na geração síncrona - ID: {cnh_request.id}, Erro: {str(e)}")
+                return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+        
+    except Exception as e:
+        logger.error(f"Erro na geração de CNH aleatória: {str(e)}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500 

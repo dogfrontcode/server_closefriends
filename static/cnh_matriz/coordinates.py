@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # static/cnh_matriz/coordinates.py
 """
 Matriz de coordenadas para posicionamento de elementos na CNH.
@@ -7,26 +8,28 @@ Coordenadas baseadas no template front-cnh.png (700x440px).
 # Coordenadas dos campos de texto (x, y)
 CNH_COORDINATES = {
     # DADOS PESSOAIS PRINCIPAIS
-    "nome_completo": (128.5, 149.5),
+    "nome_completo": (120.5, 144.5),
     "numero_habilitacao": (67.5, 465),
     
     # Outros campos baseados na análise do template
-    "primeira_habilitacao": (813, 149.5),
-    "data_nascimento": (483, 171),
+    "primeira_habilitacao": (555, 144.5),
+    "data_nascimento": ( 483, 171),
     "local_nascimento": (483, 171),
     "uf_nascimento": (483, 171),
-    "data_emissao": (361, 213),
-    "validade": (470, 213),
+    "data_emissao": (317, 223),
+    "validade": (440, 223),
     "acc": (579, 213),
-    "categoria": (640, 213),
-    "doc_identidade": (483, 253),
+    "categoria": (581, 305), #habilitacao
+    "doc_identidade": (317, 264),
     "orgao_emissor": (483, 253),
     "uf_emissor": (483, 253),
-    "cpf": (361, 293),
-    "numero_registro": (503, 293),
-    "cat_hab": (615, 293),
-    "nacionalidade": (348, 333),
-    "filiacao": (483, 373),
+    "cpf": (315, 305),
+    "numero_registro": (450, 305),
+    "cat_hab": (581, 308), # oque é isso ?
+    "nacionalidade": (317, 343),
+    "filiacao": (317, 385),
+    "nome_pai": (317, 385),      # Primeira linha - pai
+    "nome_mae": (317, 400),      # Segunda linha - mãe (15px abaixo)
     "assinatura_portador": (204, 477)
 }
 
@@ -47,6 +50,8 @@ FONT_CONFIGS = {
     "cat_hab": {"size": 10, "color": (0, 0, 0)},
     "nacionalidade": {"size": 10, "color": (0, 0, 0)},
     "filiacao": {"size": 9, "color": (0, 0, 0)},
+    "nome_pai": {"size": 9, "color": (0, 0, 0)},
+    "nome_mae": {"size": 9, "color": (0, 0, 0)},
     "assinatura_portador": {"size": 10, "color": (0, 0, 0)}
 }
 

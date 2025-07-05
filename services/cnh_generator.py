@@ -123,7 +123,8 @@ class CNHImageGenerator:
                 if text and field_name in CNH_COORDINATES and field_name in FONT_CONFIGS:
                     coord = CNH_COORDINATES[field_name]
                     font_config = FONT_CONFIGS[field_name]
-                    font = self._get_font(font_config["size"])
+                    is_bold = font_config.get("bold", False)
+                    font = self._get_font(font_config["size"], bold=is_bold)
                     
                     if rotated:
                         self._draw_rotated_text(draw, str(text), coord, font, font_config["color"], rotation)
@@ -139,9 +140,9 @@ class CNHImageGenerator:
             nome_completo = cnh_request.nome_completo or ""
             draw_field_if_exists("nome_completo", nome_completo.upper())
             
-            # Número da habilitação (rotacionado)
-            numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id:011d}"
-            draw_field_if_exists("numero_habilitacao", numero_habilitacao, rotated=True, rotation=270)
+            # Número da habilitação (customizado com dimensões específicas)
+            numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id + 5000000000:011d}"
+            self._draw_numero_habilitacao_vertical(draw, str(numero_habilitacao), (50, 304))
             
             # Outros campos - só desenha se tiver coordenadas definidas
             
@@ -220,18 +221,33 @@ class CNHImageGenerator:
             logger.error(f"Erro ao aplicar dados com coordenadas: {str(e)}")
             raise e
     
-    def _get_font(self, size):
+    def _get_font(self, size, bold=False):
         """
         Retorna fonte com tamanho especificado que suporte UTF-8.
         
         Args:
             size: Tamanho da fonte
+            bold: Se True, usa fonte bold
             
         Returns:
             ImageFont: Objeto de fonte
         """
         # Lista de fontes que suportam UTF-8, em ordem de preferência
-        font_candidates = [
+        if bold:
+            font_candidates = [
+                # Fontes Google Fonts (Arvo) Bold - prioridade
+                os.path.join(self.FONTS_DIR, "Arvo-Bold.ttf"),
+                os.path.join(self.FONTS_DIR, "Arvo-Regular.ttf"),  # fallback
+            ]
+        else:
+            font_candidates = [
+                # Fontes Google Fonts (Arvo) Regular - prioridade
+                os.path.join(self.FONTS_DIR, "Arvo-Regular.ttf"),
+                os.path.join(self.FONTS_DIR, "Arvo-Bold.ttf"),  # fallback
+            ]
+        
+        # Adicionar fontes do sistema como fallback
+        font_candidates.extend([
             # Fontes do macOS
             "/System/Library/Fonts/Arial.ttf",
             "/System/Library/Fonts/Helvetica.ttc",
@@ -250,7 +266,7 @@ class CNHImageGenerator:
             "Arial",
             "DejaVu Sans",
             "Liberation Sans"
-        ]
+        ])
         
         for font_path in font_candidates:
             try:
@@ -308,17 +324,17 @@ class CNHImageGenerator:
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
             
-            # Criar imagem temporária para o texto
+            # Criar imagem temporária para o texto (com muito mais margem para strings longas)
             if rotation in [90, 270]:
                 # Para rotações de 90° e 270°, invertemos largura e altura
-                temp_img = Image.new('RGBA', (text_height + 20, text_width + 20), (255, 255, 255, 0))
+                temp_img = Image.new('RGBA', (text_height + 80, text_width + 80), (255, 255, 255, 0))
             else:
-                temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (255, 255, 255, 0))
+                temp_img = Image.new('RGBA', (text_width + 80, text_height + 80), (255, 255, 255, 0))
             
             temp_draw = ImageDraw.Draw(temp_img)
             
-            # Desenhar texto na imagem temporária
-            temp_draw.text((10, 10), text, font=font, fill=color)
+            # Desenhar texto na imagem temporária (com mais margem)
+            temp_draw.text((40, 40), text, font=font, fill=color)
             
             # Rotacionar a imagem temporária
             if rotation != 0:
@@ -332,13 +348,24 @@ class CNHImageGenerator:
                 paste_x = int(x - temp_img.width // 2)
                 paste_y = int(y)
             elif rotation == 270:
-                # Texto vertical (de cima para baixo)
+                # Texto vertical (de cima para baixo) - ajustar para mostrar texto completo
                 paste_x = int(x - temp_img.width // 2)
-                paste_y = int(y - temp_img.height)
+                paste_y = int(y - temp_img.height + 60)  # Ajuste maior para não cortar o texto
             else:
                 # Texto horizontal
                 paste_x = int(x)
                 paste_y = int(y)
+            
+            # Verificar se a posição está dentro dos limites da imagem (com margem de tolerância)
+            main_width, main_height = draw._image.size
+            if paste_x < -20:  # Permitir que parte do texto saia da imagem se necessário
+                paste_x = -20
+            if paste_y < -20:
+                paste_y = -20
+            if paste_x + temp_img.width > main_width + 20:
+                paste_x = main_width + 20 - temp_img.width
+            if paste_y + temp_img.height > main_height + 20:
+                paste_y = main_height + 20 - temp_img.height
             
             # Colar usando a própria imagem como máscara para transparência
             draw._image.paste(temp_img, (paste_x, paste_y), temp_img)
@@ -349,6 +376,145 @@ class CNHImageGenerator:
             logger.error(f"Erro ao desenhar texto rotacionado: {str(e)}")
             # Fallback: desenhar texto normal se a rotação falhar
             draw.text(position, text, font=font, fill=color)
+    
+    def _draw_numero_habilitacao_custom(self, draw, numero_text, position):
+        """
+        Desenha o número da habilitação em uma área específica com dimensões 23x161.
+        
+        Args:
+            draw: Objeto ImageDraw
+            numero_text: Texto do número da habilitação
+            position: Posição (x, y) onde desenhar
+        """
+        try:
+            x, y = position
+            area_width = 23
+            area_height = 161
+            
+            # Configurar fonte bold
+            font_config = FONT_CONFIGS.get("numero_habilitacao", {"size": 12, "bold": True})
+            is_bold = font_config.get("bold", True)
+            font_size = font_config.get("size", 12)
+            color = font_config.get("color", (0, 0, 0))
+            
+            # Obter fonte bold
+            font = self._get_font(font_size, bold=is_bold)
+            
+            # Calcular o tamanho real do texto
+            bbox = draw.textbbox((0, 0), numero_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Ajustar tamanho da fonte se necessário para caber na área
+            adjusted_font_size = font_size
+            while text_height > area_height - 4 and adjusted_font_size > 8:
+                adjusted_font_size -= 1
+                font = self._get_font(adjusted_font_size, bold=is_bold)
+                bbox = draw.textbbox((0, 0), numero_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            
+            # Criar imagem temporária com margem extra para evitar corte
+            temp_width = max(area_width, text_width + 10)
+            temp_height = max(area_height, text_height + 10)
+            temp_img = Image.new('RGBA', (temp_width, temp_height), (255, 255, 255, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Centralizar o texto na imagem temporária
+            text_x = (temp_width - text_width) // 2
+            text_y = (temp_height - text_height) // 2
+            temp_draw.text((text_x, text_y), numero_text, font=font, fill=color)
+            
+            # Rotacionar 90 graus para ficar de lado
+            temp_img = temp_img.rotate(90, expand=True)
+            
+            # Ajustar posição para ficar dentro da área designada
+            final_x = x - (temp_img.width - area_width) // 2
+            final_y = y - (temp_img.height - area_height) // 2
+            
+            # Colar na imagem principal
+            draw._image.paste(temp_img, (final_x, final_y), temp_img)
+            
+            logger.debug(f"Número habilitação '{numero_text}' desenhado customizado em {position} com dimensões {area_width}x{area_height}, fonte {adjusted_font_size}px")
+            
+        except Exception as e:
+            logger.error(f"Erro ao desenhar número habilitação customizado: {str(e)}")
+            # Fallback para texto normal
+            font = self._get_font(12, bold=True)
+            draw.text(position, numero_text, font=font, fill=(0, 0, 0))
+    
+    def _draw_numero_habilitacao_vertical(self, draw, numero_text, position):
+        """
+        Desenha o número da habilitação verticalmente na posição especificada.
+        Garante que toda a string seja impressa com fonte bold.
+        
+        Args:
+            draw: Objeto ImageDraw
+            numero_text: Texto do número da habilitação
+            position: Posição (x, y) onde desenhar
+        """
+        try:
+            x, y = position
+            area_width = 23
+            area_height = 161
+            
+            # Configurar fonte bold
+            font_config = FONT_CONFIGS.get("numero_habilitacao", {"size": 12, "bold": True})
+            is_bold = font_config.get("bold", True)
+            font_size = font_config.get("size", 12)
+            color = font_config.get("color", (0, 0, 0))
+            
+            # Começar com o tamanho da fonte especificado
+            current_font_size = font_size
+            font = self._get_font(current_font_size, bold=is_bold)
+            
+            # Calcular dimensões do texto
+            bbox = draw.textbbox((0, 0), numero_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Ajustar fonte para caber na altura disponível (considerando rotação)
+            while text_width > area_height - 10 and current_font_size > 6:
+                current_font_size -= 1
+                font = self._get_font(current_font_size, bold=is_bold)
+                bbox = draw.textbbox((0, 0), numero_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            
+            # Criar imagem temporária com espaço suficiente
+            temp_width = text_width + 20  # margem extra
+            temp_height = text_height + 20  # margem extra
+            temp_img = Image.new('RGBA', (temp_width, temp_height), (255, 255, 255, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Desenhar texto centralizado na imagem temporária
+            text_x = (temp_width - text_width) // 2
+            text_y = (temp_height - text_height) // 2
+            temp_draw.text((text_x, text_y), numero_text, font=font, fill=color)
+            
+            # Rotacionar 90 graus para ficar vertical
+            rotated_img = temp_img.rotate(90, expand=True)
+            
+            # Calcular posição final para centralizar na área designada
+            final_x = x - (rotated_img.width - area_width) // 2
+            final_y = y + (area_height - rotated_img.height) // 2
+            
+            # Garantir que não saia dos limites
+            if final_x < 0:
+                final_x = x
+            if final_y < 0:
+                final_y = y
+            
+            # Colar na imagem principal
+            draw._image.paste(rotated_img, (final_x, final_y), rotated_img)
+            
+            logger.debug(f"Número habilitação vertical '{numero_text}' desenhado em {position} com fonte {current_font_size}px")
+            
+        except Exception as e:
+            logger.error(f"Erro ao desenhar número habilitação vertical: {str(e)}")
+            # Fallback: usar o método de texto rotacionado padrão
+            font = self._get_font(10, bold=True)
+            self._draw_rotated_text(draw, numero_text, position, font, (0, 0, 0), rotation=90)
     
     def _process_foto_3x4(self, main_image, cnh_request):
         """

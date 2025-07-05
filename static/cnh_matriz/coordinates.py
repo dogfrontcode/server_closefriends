@@ -9,7 +9,7 @@ Coordenadas baseadas no template front-cnh.png (700x440px).
 CNH_COORDINATES = {
     # DADOS PESSOAIS PRINCIPAIS
     "nome_completo": (120.5, 144.5),
-    "numero_habilitacao": (67.5, 465),
+    "numero_habilitacao": (50, 304),
     
     # Outros campos baseados na análise do template
     "primeira_habilitacao": (555, 144.5),
@@ -37,7 +37,7 @@ CNH_COORDINATES = {
 # Configurações de fonte para cada campo
 FONT_CONFIGS = {
     "nome_completo": {"size": 14, "color": (0, 0, 0)},
-    "numero_habilitacao": {"size": 12, "color": (0, 0, 0)},
+    "numero_habilitacao": {"size": 12, "color": (0, 0, 0), "bold": True},
     "primeira_habilitacao": {"size": 12, "color": (0, 0, 0)},
     "data_nascimento": {"size": 11, "color": (0, 0, 0)},
     "local_nascimento": {"size": 10, "color": (0, 0, 0)},

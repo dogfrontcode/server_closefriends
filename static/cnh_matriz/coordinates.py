@@ -18,7 +18,7 @@ CNH_COORDINATES = {
     "uf_nascimento": (483, 171),
     "data_emissao": (317, 223),
     "validade": (440, 223),
-    "acc": (579, 213),
+    #"acc": (579, 213),
     "categoria": (581, 305), #habilitacao
     "doc_identidade": (317, 264),
     "orgao_emissor": (483, 253),
@@ -35,25 +35,27 @@ CNH_COORDINATES = {
 }
 
 # Configurações de fonte para cada campo
+# Todas as fontes usam ASUL-REGULAR.TTF, exceto numero_registro que usa ASUL-BOLD.TTF
+# Campos em VERMELHO: validade, categoria, numero_registro
 FONT_CONFIGS = {
     "nome_completo": {"size": 14, "color": (0, 0, 0)},
-    "numero_habilitacao": {"size": 12, "color": (0, 0, 0), "bold": True},
+    "numero_habilitacao": {"size": 30, "color": (0, 0, 0), "bold": True},  # Número vertical - ASUL-BOLD
     "primeira_habilitacao": {"size": 12, "color": (0, 0, 0)},
     "data_nascimento": {"size": 11, "color": (0, 0, 0)},
-    "local_nascimento": {"size": 10, "color": (0, 0, 0)},
+    "local_nascimento": {"size": 12, "color": (0, 0, 0)},
     "data_emissao": {"size": 11, "color": (0, 0, 0)},
-    "validade": {"size": 11, "color": (0, 0, 0)},
+    "validade": {"size": 11, "color": (195, 0, 30)},  # VERMELHO
     "acc": {"size": 11, "color": (0, 0, 0)},
-    "categoria": {"size": 12, "color": (0, 0, 0)},
-    "doc_identidade": {"size": 10, "color": (0, 0, 0)},
+    "categoria": {"size": 12, "color": (195, 0, 30)},  # VERMELHO
+    "doc_identidade": {"size": 12, "color": (0, 0, 0)},
     "cpf": {"size": 11, "color": (0, 0, 0)},
-    "numero_registro": {"size": 10, "color": (0, 0, 0)},
-    "cat_hab": {"size": 10, "color": (0, 0, 0)},
-    "nacionalidade": {"size": 10, "color": (0, 0, 0)},
-    "filiacao": {"size": 9, "color": (0, 0, 0)},
-    "nome_pai": {"size": 9, "color": (0, 0, 0)},
-    "nome_mae": {"size": 9, "color": (0, 0, 0)},
-    "assinatura_portador": {"size": 10, "color": (0, 0, 0)}
+    "numero_registro": {"size": 12, "color": (195, 0, 30)},  # VERMELHO + ASUL-BOLD
+    "cat_hab": {"size": 12, "color": (0, 0, 0)},
+    "nacionalidade": {"size": 12, "color": (0, 0, 0)},
+    "filiacao": {"size": 12, "color": (0, 0, 0)},
+    "nome_pai": {"size": 12, "color": (0, 0, 0)},
+    "nome_mae": {"size": 12, "color": (0, 0, 0)},
+    "assinatura_portador": {"size": 12, "color": (0, 0, 0)}
 }
 
 # Dimensões do template

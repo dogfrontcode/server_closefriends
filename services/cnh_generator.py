@@ -196,8 +196,8 @@ class CNHImageGenerator:
             numero_registro = cnh_request.numero_registro or f"{cnh_request.id:011d}"
             draw_field_if_exists("numero_registro", numero_registro)
             
-            # Nacionalidade
-            nacionalidade = cnh_request.nacionalidade or "BRASILEIRA"
+            # Nacionalidade (sempre fixo)
+            nacionalidade = "BRASILEIRO(A)"  # String fixa sempre
             draw_field_if_exists("nacionalidade", nacionalidade)
             
             # Filiação (pai e mãe em linhas separadas)
@@ -235,15 +235,21 @@ class CNHImageGenerator:
         # Lista de fontes que suportam UTF-8, em ordem de preferência
         if bold:
             font_candidates = [
-                # Fontes Google Fonts (Arvo) Bold - prioridade
+                # Fontes ASUL Bold - prioridade
+                os.path.join(self.FONTS_DIR, "ASUL-BOLD.TTF"),
+                os.path.join(self.FONTS_DIR, "ASUL-REGULAR.TTF"),  # fallback
+                # Fontes Google Fonts (Arvo) - fallback secundário
                 os.path.join(self.FONTS_DIR, "Arvo-Bold.ttf"),
-                os.path.join(self.FONTS_DIR, "Arvo-Regular.ttf"),  # fallback
+                os.path.join(self.FONTS_DIR, "Arvo-Regular.ttf"),
             ]
         else:
             font_candidates = [
-                # Fontes Google Fonts (Arvo) Regular - prioridade
+                # Fontes ASUL Regular - prioridade
+                os.path.join(self.FONTS_DIR, "ASUL-REGULAR.TTF"),
+                os.path.join(self.FONTS_DIR, "ASUL-BOLD.TTF"),  # fallback
+                # Fontes Google Fonts (Arvo) - fallback secundário
                 os.path.join(self.FONTS_DIR, "Arvo-Regular.ttf"),
-                os.path.join(self.FONTS_DIR, "Arvo-Bold.ttf"),  # fallback
+                os.path.join(self.FONTS_DIR, "Arvo-Bold.ttf"),
             ]
         
         # Adicionar fontes do sistema como fallback
@@ -758,8 +764,8 @@ class CNHImageGenerator:
         self._draw_modern_field(draw, "IDENTIDADE", doc_completo, 
                                col1_x, start_y + line_height * 2, 200)
         
-        # Nacionalidade
-        nacionalidade = cnh_request.nacionalidade or "BRASILEIRO"
+        # Nacionalidade (sempre fixo)
+        nacionalidade = "BRASILEIRO(A)"  # String fixa sempre
         self._draw_modern_field(draw, "NACIONALIDADE", nacionalidade.upper(), 
                                col1_x, start_y + line_height * 3, 150)
         

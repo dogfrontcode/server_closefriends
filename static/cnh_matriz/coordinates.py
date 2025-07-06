@@ -13,9 +13,10 @@ CNH_COORDINATES = {
     
     # Outros campos baseados na análise do template
     "primeira_habilitacao": (555, 144.5),
-    "data_nascimento": ( 483, 171),
-    "local_nascimento": (483, 171),
-    "uf_nascimento": (483, 171),
+    "data_local_uf_nascimento": (317, 182),  # Campo concatenado: "DD/MM/AAAA, CIDADE, UF"
+    # "data_nascimento": ( 483, 171),  # Removido - agora é concatenado
+    # "local_nascimento": (483, 171),  # Removido - agora é concatenado  
+    # "uf_nascimento": (483, 171),     # Removido - agora é concatenado
     "data_emissao": (317, 223),
     "validade": (440, 223),
     #"acc": (579, 213),
@@ -41,8 +42,9 @@ FONT_CONFIGS = {
     "nome_completo": {"size": 14, "color": (0, 0, 0)},
     "numero_habilitacao": {"size": 30, "color": (0, 0, 0), "bold": True},  # Número vertical - ASUL-BOLD
     "primeira_habilitacao": {"size": 12, "color": (0, 0, 0)},
-    "data_nascimento": {"size": 11, "color": (0, 0, 0)},
-    "local_nascimento": {"size": 12, "color": (0, 0, 0)},
+    "data_local_uf_nascimento": {"size": 11, "color": (0, 0, 0)},  # Campo concatenado
+    # "data_nascimento": {"size": 11, "color": (0, 0, 0)},     # Removido
+    # "local_nascimento": {"size": 12, "color": (0, 0, 0)},    # Removido
     "data_emissao": {"size": 11, "color": (0, 0, 0)},
     "validade": {"size": 11, "color": (195, 0, 30)},  # VERMELHO
     "acc": {"size": 11, "color": (0, 0, 0)},

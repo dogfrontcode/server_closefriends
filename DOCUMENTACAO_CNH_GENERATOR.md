@@ -294,6 +294,36 @@ draw_field_if_exists("nacionalidade", nacionalidade)
 
 Esta abordagem garante que todas as CNHs geradas tenham nacionalidade brasileira, independentemente de inconsistências nos dados de entrada.
 
+### Concatenação de Campos de Nascimento
+
+Os campos de data, local e UF de nascimento são concatenados em uma única string:
+
+- **Formato**: "DD/MM/AAAA, CIDADE, UF"
+- **Posição**: (319, 192.5)
+- **Exemplo**: "15/05/1990, SAO PAULO, SP"
+- **Configuração**: Fonte ASUL-REGULAR, tamanho 11px, cor preta
+
+#### Implementação da Concatenação
+
+```python
+# No método _apply_data_with_coordinates:
+# Data, Local e UF de nascimento (concatenados)
+data_local_uf_concatenado = ""
+if cnh_request.data_nascimento:
+    data_nasc = cnh_request.data_nascimento.strftime("%d/%m/%Y")
+    local_nasc = cnh_request.local_nascimento or "NÃO INFORMADO"
+    uf_nasc = cnh_request.uf_nascimento or "UF"
+    data_local_uf_concatenado = f"{data_nasc}, {local_nasc.upper()}, {uf_nasc.upper()}"
+    draw_field_if_exists("data_local_uf_nascimento", data_local_uf_concatenado)
+```
+
+#### Vantagens da Concatenação
+
+- **Economia de espaço**: Três campos em uma única linha
+- **Melhor legibilidade**: Formato natural e padronizado
+- **Consistência**: Sempre maiúsculas para local e UF
+- **Fallbacks**: Valores padrão para campos vazios
+
 #### Algoritmo de Renderização
 
 ```python
@@ -632,6 +662,105 @@ def draw_field_if_exists(field_name, text):
 ---
 
 ## 🔄 Histórico de Mudanças
+
+### v2.6 - Correção do Redimensionamento de Assinatura com Transparência
+
+**Data**: Implementado após identificação do problema de transparência
+
+**Problema Identificado**:
+- ❌ **Método anterior**: Usava `_resize_and_crop_image` que cortava partes da assinatura
+- ❌ **Resultado**: Assinatura incompleta ou cortada nas bordas
+- ❌ **Transparência**: Não preservava adequadamente o fundo transparente
+
+**Mudanças Realizadas**:
+- ✅ **Nova função**: `_resize_signature_exact()` para redimensionar sem cortar
+- ✅ **Preservação de transparência**: Força conversão para RGBA se necessário
+- ✅ **Redimensionamento direto**: Para 168x50 pixels sem perder conteúdo
+- ✅ **Logs detalhados**: Mostra modo da imagem (RGBA vs RGB) durante processamento
+- ✅ **Teste incluído**: `test_assinatura_transparencia.py` demonstra a diferença
+
+**Impacto**:
+- **Assinatura completa**: Todo o conteúdo da assinatura é preservado
+- **Transparência funcional**: Fundo transparente mantido durante redimensionamento
+- **Integração perfeita**: Assinatura se funde com o fundo da CNH sem retângulo branco
+- **Flexibilidade**: Funciona com PNG (transparente) e JPEG (converte para transparente)
+
+**Arquivos Alterados**:
+- `claude/services/cnh_generator.py`: Adicionada `_resize_signature_exact()`
+- `claude/services/cnh_generator.py`: Modificada `_process_signature()` com logs
+- `claude/test_assinatura_transparencia.py`: Novo teste demonstrativo
+
+**Código da Nova Função**:
+```python
+def _resize_signature_exact(self, image, target_width, target_height):
+    """
+    Redimensiona assinatura para tamanho exato SEM cortar.
+    Preserva todo o conteúdo da assinatura, incluindo transparência.
+    """
+    # Garantir que a imagem tenha transparência (RGBA)
+    if image.mode != 'RGBA':
+        image = image.convert('RGBA')
+    
+    # Redimensionar diretamente para o tamanho exato
+    resized = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    return resized
+```
+
+**Diferença Visual**:
+- **Antes**: Assinatura cortada + possível fundo branco
+- **Depois**: Assinatura completa + fundo transparente perfeito
+
+**Recomendações**:
+- 📱 **Para usuários**: Use PNG com fundo transparente para assinaturas
+- 🔧 **Para desenvolvedores**: Sistema agora converte automaticamente para RGBA
+- 🧪 **Para testes**: Execute `test_assinatura_transparencia.py` para ver exemplos
+
+**Status**: ✅ Problema resolvido na v2.6
+
+### v2.5 - Correção Crítica das Dimensões do Template
+
+**Data**: Implementado conforme solicitação
+
+**Mudanças Realizadas**:
+- ✅ Correção das dimensões do template para 700x440 pixels
+- ✅ Atualização do gerador para usar essas novas dimensões
+- ✅ Testes de compatibilidade realizados
+
+**Impacto**:
+- **CNH correta**: Dimensões corretas para o template oficial
+- **Compatibilidade**: Sistema mantém compatibilidade com versões anteriores
+
+### v2.4 - Correção de Assinatura
+
+**Data**: Implementado conforme solicitação
+
+**Mudanças Realizadas**:
+- ✅ Correção do método de processamento da assinatura
+- ✅ Atualização do gerador para usar o novo método
+- ✅ Testes de compatibilidade realizados
+
+**Impacto**:
+- **Assinatura correta**: Processamento correto da assinatura
+- **Compatibilidade**: Sistema mantém compatibilidade com versões anteriores
+
+### v2.3 - Concatenação de Campos de Nascimento
+
+**Data**: Implementado conforme solicitação
+
+**Mudanças Realizadas**:
+- ✅ **Concatenação** de data, local e UF de nascimento em um único campo
+- ✅ **Formato**: "DD/MM/AAAA, CIDADE, UF" (ex: "15/05/1990, SAO PAULO, SP")
+- ✅ **Posição**: (319, 192.5) - Nova posição específica solicitada
+- ✅ **Remoção** dos campos individuais das coordenadas
+- ✅ **Configuração**: Fonte ASUL-REGULAR, tamanho 11px, cor preta
+- ✅ **Código**: Implementado em `_apply_data_with_coordinates`
+- ✅ **Testes**: Verificação completa com dados reais
+- ✅ **Documentação**: Atualizada com nova funcionalidade
+
+**Impacto**:
+- Apresentação mais limpa e organizada dos dados de nascimento
+- Melhor uso do espaço na CNH
+- Formato padronizado e profissional
 
 ### v2.2 - Nacionalidade Fixa + Ajustes de Tamanho e Cor
 

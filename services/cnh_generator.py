@@ -151,10 +151,14 @@ class CNHImageGenerator:
                 primeira_hab = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
                 draw_field_if_exists("primeira_habilitacao", primeira_hab)
             
-            # Data de nascimento
+            # Data, Local e UF de nascimento (concatenados)
+            data_local_uf_concatenado = ""
             if cnh_request.data_nascimento:
                 data_nasc = cnh_request.data_nascimento.strftime("%d/%m/%Y")
-                draw_field_if_exists("data_nascimento", data_nasc)
+                local_nasc = cnh_request.local_nascimento or "NÃO INFORMADO"
+                uf_nasc = cnh_request.uf_nascimento or "UF"
+                data_local_uf_concatenado = f"{data_nasc}, {local_nasc.upper()}, {uf_nasc.upper()}"
+                draw_field_if_exists("data_local_uf_nascimento", data_local_uf_concatenado)
             
             # Data de emissão
             if cnh_request.data_emissao:
@@ -569,6 +573,7 @@ class CNHImageGenerator:
         try:
             # Verificar se há caminho para assinatura
             if not hasattr(cnh_request, 'assinatura_path') or not cnh_request.assinatura_path:
+                logger.debug("Nenhuma assinatura fornecida")
                 return
                 
             assinatura_path = cnh_request.assinatura_path
@@ -576,28 +581,67 @@ class CNHImageGenerator:
                 logger.warning(f"Assinatura não encontrada: {assinatura_path}")
                 return
             
-            # Carregar e redimensionar assinatura
+            # Carregar assinatura original
             signature = Image.open(assinatura_path)
+            logger.info(f"Assinatura carregada: {signature.size}, modo: {signature.mode}")
+            
             sig_width = ASSINATURA_AREA["width"]
             sig_height = ASSINATURA_AREA["height"]
             
-            # Redimensionar mantendo proporção
-            signature = self._resize_and_crop_image(signature, sig_width, sig_height)
+            # Redimensionar assinatura para tamanho exato (sem cortar)
+            signature = self._resize_signature_exact(signature, sig_width, sig_height)
             
-            # Se a assinatura tiver transparência, preservar
+            # Colar assinatura preservando transparência
             if signature.mode == 'RGBA':
                 main_image.paste(signature, ASSINATURA_AREA["position"], signature)
+                logger.info("✅ Assinatura colada com transparência preservada")
             else:
                 main_image.paste(signature, ASSINATURA_AREA["position"])
+                logger.info("⚠️ Assinatura colada sem transparência")
             
             logger.info(f"Assinatura inserida em {ASSINATURA_AREA['position']} com dimensões {sig_width}x{sig_height}")
             
         except Exception as e:
             logger.error(f"Erro ao processar assinatura: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+    
+    def _resize_signature_exact(self, image, target_width, target_height):
+        """
+        Redimensiona assinatura para tamanho exato SEM cortar.
+        Preserva todo o conteúdo da assinatura, incluindo transparência.
+        
+        Args:
+            image: Imagem PIL da assinatura
+            target_width: Largura desejada
+            target_height: Altura desejada
+            
+        Returns:
+            Image: Imagem redimensionada para tamanho exato com transparência preservada
+        """
+        try:
+            logger.info(f"Redimensionando assinatura: {image.size} -> {target_width}x{target_height}")
+            logger.info(f"Modo da imagem original: {image.mode}")
+            
+            # Garantir que a imagem tenha transparência (RGBA)
+            if image.mode != 'RGBA':
+                logger.info("Convertendo imagem para RGBA para preservar transparência")
+                image = image.convert('RGBA')
+            
+            # Redimensionar diretamente para o tamanho exato preservando transparência
+            resized = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            
+            logger.info(f"Assinatura redimensionada com sucesso para {resized.size}, modo: {resized.mode}")
+            return resized
+            
+        except Exception as e:
+            logger.error(f"Erro ao redimensionar assinatura: {str(e)}")
+            raise e
     
     def _resize_and_crop_image(self, image, target_width, target_height):
         """
         Redimensiona e corta imagem para o tamanho exato mantendo proporção.
+        USADO APENAS PARA FOTOS 3X4 - corta excesso para manter proporção.
         
         Args:
             image: Imagem PIL
@@ -784,34 +828,34 @@ class CNHImageGenerator:
         self._draw_modern_field(draw, "NOME DA MÃE", nome_mae.upper() if nome_mae != "NÃO INFORMADO" else nome_mae, 
                                col1_x, start_y + line_height * 6, 250)
         
-        # Coluna 2 - Datas e local
+        # Coluna 2 - Datas e local (data de nascimento agora concatenada na coordenada principal)
+        # Data de nascimento movida para coordenada (483, 171) concatenada com local e UF
         if cnh_request.data_nascimento:
-            data_nasc_formatada = cnh_request.data_nascimento.strftime("%d/%m/%Y")
             idade = cnh_request.get_idade()
         else:
-            data_nasc_formatada = "NÃO INFORMADA"
             idade = 0
         
-        self._draw_modern_field(draw, "DATA NASCIMENTO", data_nasc_formatada, 
-                               col2_x, start_y, 100)
+        # self._draw_modern_field(draw, "DATA NASCIMENTO", data_nasc_formatada, 
+        #                        col2_x, start_y, 100)  # Removido - agora concatenado
         
         self._draw_modern_field(draw, "IDADE", f"{idade} anos" if idade > 0 else "NÃO CALC.", 
-                               col2_x, start_y + line_height, 80)
+                               col2_x, start_y, 80)  # Movido para start_y (posição da data)
         
-        # Local de nascimento
-        local_nasc = cnh_request.local_nascimento or "NÃO INFORMADO"
-        uf_nasc = cnh_request.uf_nascimento or ""
-        local_completo = f"{local_nasc}/{uf_nasc}" if uf_nasc else local_nasc
-        self._draw_modern_field(draw, "LOCAL NASCIMENTO", local_completo.upper(), 
-                               col2_x, start_y + line_height * 2, 150)
-        
-        # Primeira habilitação
+        # Primeira habilitação (movida para cima)
         if cnh_request.primeira_habilitacao:
             primeira_hab = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
         else:
             primeira_hab = "NÃO INFORMADA"
         self._draw_modern_field(draw, "1ª HABILITAÇÃO", primeira_hab, 
-                               col2_x, start_y + line_height * 3, 120)
+                               col2_x, start_y + line_height, 120)  # Movido para line_height (posição da idade)
+        
+        # Local de nascimento (agora concatenado no campo principal)
+        # Removido daqui pois está sendo exibido concatenado com data na coordenada (483, 171)
+        # local_nasc = cnh_request.local_nascimento or "NÃO INFORMADO"
+        # uf_nasc = cnh_request.uf_nascimento or ""
+        # local_completo = f"{local_nasc}/{uf_nasc}" if uf_nasc else local_nasc
+        # self._draw_modern_field(draw, "LOCAL NASCIMENTO", local_completo.upper(), 
+        #                        col2_x, start_y + line_height * 2, 150)
         
         # Categoria destacada
         categoria = cnh_request.categoria_habilitacao or "B"

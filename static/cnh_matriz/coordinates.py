@@ -72,10 +72,13 @@ FOTO_3X4_AREA = {
 }
 
 # Configurações da área da assinatura do portador (imagem do cliente)
+# Área total disponível: 167x46 pixels
+# Assinatura atual: 118x35 pixels
+# Centralização: margem horizontal = (167-118)/2 = 24.5, margem vertical = (46-35)/2 = 5.5
 ASSINATURA_AREA = {
-    "position": (120, 430),  # Ajustado para ficar dentro da imagem (496-50=446, usando 430)
-    "width": 168,
-    "height": 50
+    "position": (145, 430),  # Centralizado: (120+24.5, 410+5.5) = (144.5, 415.5) ≈ (145, 416)
+    "width": 118,  # Reduzido 30% (168 * 0.7 = 117.6 ≈ 118)
+    "height": 35   # Reduzido 30% (50 * 0.7 = 35)
 }
 
 # Caminhos dos arquivos

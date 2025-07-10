@@ -12,7 +12,7 @@ CNH_COORDINATES = {
     "numero_habilitacao": (50, 304),
     
     # Outros campos baseados na análise do template
-    "primeira_habilitacao": (555, 144.5),
+    "primeira_habilitacao": (555, 140),
     "data_local_uf_nascimento": (317, 182),  # Campo concatenado: "DD/MM/AAAA, CIDADE, UF"
     # "data_nascimento": ( 483, 171),  # Removido - agora é concatenado
     # "local_nascimento": (483, 171),  # Removido - agora é concatenado  

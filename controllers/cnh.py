@@ -711,6 +711,106 @@ def get_cnh_info_public(cnh_id):
         logger.error(f"Erro na consulta pública - CNH ID: {cnh_id}, Erro: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
+@cnh_bp.route('/query/<int:cnh_id>', methods=['GET'])
+def query_cnh_database(cnh_id):
+    """
+    Endpoint público para consultar TODOS os dados da CNH diretamente no banco.
+    Retorna todos os campos do formulário original sem filtros.
+    
+    Usage: GET /api/cnh/query/222
+    """
+    try:
+        # Buscar CNH por ID diretamente no banco
+        cnh_request = CNHRequest.query.filter_by(id=cnh_id).first()
+        
+        if not cnh_request:
+            return jsonify({
+                'success': False,
+                'error': 'CNH não encontrada no banco de dados',
+                'id_consultado': cnh_id
+            }), 404
+        
+        # Retornar TODOS os dados do formulário/banco
+        dados_completos = {
+            'id': cnh_request.id,
+            'user_id': cnh_request.user_id,
+            
+            # Dados pessoais básicos
+            'nome_completo': cnh_request.nome_completo,
+            'cpf': cnh_request.cpf,
+            'data_nascimento': cnh_request.data_nascimento.isoformat() if cnh_request.data_nascimento else None,
+            'local_nascimento': cnh_request.local_nascimento,
+            'uf_nascimento': cnh_request.uf_nascimento,
+            'nacionalidade': cnh_request.nacionalidade,
+            'nome_pai': cnh_request.nome_pai,
+            'nome_mae': cnh_request.nome_mae,
+            'sexo_condutor': cnh_request.sexo_condutor,
+            
+            # Documento de identidade
+            'doc_identidade_numero': cnh_request.doc_identidade_numero,
+            'doc_identidade_orgao': cnh_request.doc_identidade_orgao,
+            'doc_identidade_uf': cnh_request.doc_identidade_uf,
+            
+            # Datas da CNH
+            'primeira_habilitacao': cnh_request.primeira_habilitacao.isoformat() if cnh_request.primeira_habilitacao else None,
+            'data_emissao': cnh_request.data_emissao.isoformat() if cnh_request.data_emissao else None,
+            'validade': cnh_request.validade.isoformat() if cnh_request.validade else None,
+            
+            # Configurações da CNH
+            'categoria_habilitacao': cnh_request.categoria_habilitacao,
+            'acc': cnh_request.acc,
+            'uf_cnh': cnh_request.uf_cnh,
+            
+            # Números de controle
+            'numero_registro': cnh_request.numero_registro,
+            'numero_espelho': cnh_request.numero_espelho,
+            'codigo_validacao': cnh_request.codigo_validacao,
+            'numero_renach': cnh_request.numero_renach,
+            
+            # Local da habilitação
+            'local_municipio': cnh_request.local_municipio,
+            'local_uf': cnh_request.local_uf,
+            
+            # Outras informações
+            'categorias_adicionais': cnh_request.categorias_adicionais,
+            'observacoes': cnh_request.observacoes,
+            
+            # Arquivos
+            'foto_3x4_path': cnh_request.foto_3x4_path,
+            'assinatura_path': cnh_request.assinatura_path,
+            'generated_image_path': cnh_request.generated_image_path,
+            
+            # Controle do sistema
+            'status': cnh_request.status,
+            'custo': cnh_request.custo,
+            'error_message': cnh_request.error_message,
+            'created_at': cnh_request.created_at.isoformat() if cnh_request.created_at else None,
+            'completed_at': cnh_request.completed_at.isoformat() if cnh_request.completed_at else None,
+            
+            # URLs e informações úteis
+            'image_url': f'/api/cnh/view/{cnh_id}' if cnh_request.can_download() else None,
+            'can_download': cnh_request.can_download(),
+            'status_display': cnh_request.get_status_display() if hasattr(cnh_request, 'get_status_display') else cnh_request.status
+        }
+        
+        # Log da consulta
+        logger.info(f"Consulta completa no banco - CNH ID: {cnh_id}, Nome: {cnh_request.nome_completo}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Dados obtidos diretamente do banco de dados',
+            'id_consultado': cnh_id,
+            'dados_formulario': dados_completos
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro na consulta do banco - CNH ID: {cnh_id}, Erro: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}',
+            'id_consultado': cnh_id
+        }), 500
+
 @cnh_bp.route('/generate-random', methods=['GET'])
 def generate_random_cnh():
     """

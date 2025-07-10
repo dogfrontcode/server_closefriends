@@ -8,7 +8,7 @@ Coordenadas baseadas no template front-cnh.png (700x440px).
 # Coordenadas dos campos de texto (x, y)
 CNH_COORDINATES = {
     # DADOS PESSOAIS PRINCIPAIS
-    "nome_completo": (120.5, 144.5),
+    "nome_completo": (126.5, 140),
     "numero_habilitacao": (50, 304),
     
     # Outros campos baseados na análise do template

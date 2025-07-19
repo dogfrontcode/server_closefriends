@@ -2,6 +2,7 @@
 import secrets
 import logging
 from flask import Flask, render_template, session, redirect, url_for
+from flask_cors import CORS
 from models import db  # Aqui o Python procura pelo objeto 'db' dentro do pacote models
 from flask_jwt_extended import JWTManager
 from controllers import auth_bp
@@ -38,6 +39,21 @@ def create_app():
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção CSRF
     app.config['SESSION_COOKIE_MAX_AGE'] = 7200  # 2 horas em segundos (2 * 60 * 60)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Renova a sessão a cada request
+
+    # 🆕 NOVA ARQUITETURA: Configurar CORS para comunicação com Servidor B
+    CORS(app, resources={
+        r"/api/cnh/consultar/*": {
+            "origins": ["*"],  # ⚠️ Em produção, especificar domínios exatos
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
+            "supports_credentials": False
+        },
+        r"/static/uploads/*": {
+            "origins": ["*"],  # Para acesso direto às imagens
+            "methods": ["GET"],
+            "supports_credentials": False
+        }
+    })
 
     db.init_app(app)
     JWTManager(app)

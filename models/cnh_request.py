@@ -65,6 +65,9 @@ class CNHRequest(db.Model):
     assinatura_path = db.Column(db.String(255))
     custo = db.Column(db.Float, default=5.0, nullable=False)
     
+    # 🆕 NOVA ARQUITETURA: Senha para acesso à CNH no Servidor B
+    cnh_password = db.Column(db.String(4))  # 4 dígitos: DDMM da data de nascimento
+    
     # Controle do processo
     status = db.Column(db.String(20), default='pending', nullable=False)
     # Status possíveis: 'pending', 'processing', 'completed', 'failed'
@@ -366,6 +369,13 @@ class CNHRequest(db.Model):
                 if hasattr(cnh_request, campo):
                     setattr(cnh_request, campo, valor)
             
+            # 🆕 NOVA ARQUITETURA: Definir senha CNH (sempre 0101 se der problema)
+            try:
+                cnh_request.set_senha_cnh()
+            except:
+                # FALLBACK: sempre 0101 se der qualquer problema
+                cnh_request.cnh_password = "0101"
+            
             db.session.add(cnh_request)
             db.session.flush()  # Para obter o ID
             
@@ -552,3 +562,57 @@ class CNHRequest(db.Model):
     
     def __repr__(self):
         return f'<CNHRequest {self.id}: {self.nome_completo} - {self.status}>' 
+
+    # ==================== MÉTODOS PARA SENHA CNH (NOVA ARQUITETURA) ====================
+    
+    def gerar_senha_cnh(self):
+        """
+        Gera senha de 4 dígitos baseada na data de nascimento (DDMM).
+        
+        Returns:
+            str: Senha no formato DDMM (ex: "1503" para 15/03) ou "0101" como padrão
+        """
+        if self.data_nascimento:
+            dia = f"{self.data_nascimento.day:02d}"
+            mes = f"{self.data_nascimento.month:02d}"
+            senha = f"{dia}{mes}"
+            logger.info(f"Senha CNH gerada: {senha} para data {self.data_nascimento}")
+            return senha
+        else:
+            logger.info("Data de nascimento não informada, usando senha padrão: 0101")
+            return "0101"  # Senha padrão para CNHs sem data de nascimento
+    
+    def set_senha_cnh(self):
+        """
+        Define automaticamente a senha da CNH baseada na data de nascimento.
+        Se der problema, usa sempre 0101.
+        """
+        try:
+            self.cnh_password = self.gerar_senha_cnh()
+            logger.info(f"Senha CNH definida para CNH ID: {self.id}, Senha: {self.cnh_password}")
+        except Exception as e:
+            # FALLBACK: sempre 0101 se der qualquer problema
+            self.cnh_password = "0101"
+            logger.warning(f"Erro ao gerar senha, usando 0101 - CNH ID: {self.id}, Erro: {str(e)}")
+    
+    def validar_senha_cnh(self, senha_informada):
+        """
+        Valida se a senha informada está correta para acessar esta CNH.
+        SEMPRE funciona, no pior caso usa 0101.
+        
+        Args:
+            senha_informada (str): Senha de 4 dígitos informada pelo usuário
+            
+        Returns:
+            bool: True se a senha estiver correta
+        """
+        try:
+            if not self.cnh_password:
+                # Se não tem senha definida, usar 0101
+                self.cnh_password = "0101"
+                db.session.commit()
+            
+            return str(senha_informada).strip() == str(self.cnh_password).strip()
+        except:
+            # FALLBACK: se der qualquer erro, comparar com 0101
+            return str(senha_informada).strip() == "0101" 

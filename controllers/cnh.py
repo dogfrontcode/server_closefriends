@@ -400,6 +400,84 @@ def download_cnh(cnh_id):
         logger.error(f"Erro no download - CNH ID: {cnh_id}, User ID: {session.get('user_id')}, Erro: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
+
+@cnh_bp.route('/update/<int:cnh_id>', methods=['PUT'])
+@require_auth
+def update_cnh(cnh_id):
+    """
+    Endpoint para atualizar dados da CNH.
+    """
+    try:
+        user_id = session['user_id']
+        
+        # Buscar CNH
+        cnh_request = CNHRequest.query.filter_by(
+            id=cnh_id, 
+            user_id=user_id
+        ).first()
+        
+        if not cnh_request:
+            return jsonify({'error': 'CNH não encontrada'}), 404
+        
+        # Obter dados do request
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados inválidos'}), 400
+        
+        # Lista de campos que podem ser atualizados
+        updateable_fields = [
+            'nome_completo', 'cpf', 'data_nascimento', 'sexo_condutor',
+            'local_nascimento', 'uf_nascimento', 'nome_pai', 'nome_mae',
+            'doc_identidade_numero', 'doc_identidade_orgao', 'doc_identidade_uf',
+            'categoria_habilitacao', 'uf_cnh', 'acc', 'local_municipio', 'local_uf',
+            'primeira_habilitacao', 'data_emissao', 'validade',
+            'numero_registro', 'numero_espelho', 'codigo_validacao', 'numero_renach',
+            'observacoes'
+        ]
+        
+        # Atualizar campos
+        updated_fields = []
+        for field in updateable_fields:
+            if field in data:
+                old_value = getattr(cnh_request, field)
+                new_value = data[field]
+                
+                # Tratar valores vazios
+                if new_value == '':
+                    new_value = None
+                
+                # Converter datas se necessário
+                if field in ['data_nascimento', 'primeira_habilitacao', 'data_emissao', 'validade'] and new_value:
+                    try:
+                        new_value = datetime.strptime(new_value, '%Y-%m-%d').date()
+                    except ValueError:
+                        return jsonify({'error': f'Data inválida para o campo {field}'}), 400
+                
+                # Só atualizar se houve mudança
+                if old_value != new_value:
+                    setattr(cnh_request, field, new_value)
+                    updated_fields.append(field)
+        
+        if not updated_fields:
+            return jsonify({'success': True, 'message': 'Nenhuma alteração detectada'}), 200
+        
+        # Salvar no banco
+        db.session.commit()
+        
+        # Log da atualização
+        logger.info(f"CNH atualizada - User: {session.get('username')}, CNH ID: {cnh_id}, Campos: {', '.join(updated_fields)}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'CNH atualizada com sucesso. Campos alterados: {", ".join(updated_fields)}',
+            'updated_fields': updated_fields
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar CNH - CNH ID: {cnh_id}, User ID: {session.get('user_id')}, Erro: {str(e)}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
 @cnh_bp.route('/status/<int:cnh_id>', methods=['GET'])
 @require_auth
 def get_cnh_status(cnh_id):

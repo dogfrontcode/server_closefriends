@@ -1686,6 +1686,281 @@
         </div>
     </div>
 
+    <!-- Modal de Edição da CNH -->
+    <div id="cnhEditModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-edit text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Editar CNH</h3>
+                        <p class="text-sm text-gray-500">CNH ID: <span id="editModalCnhId" class="font-medium">-</span></p>
+                    </div>
+                </div>
+                <button onclick="closeCNHEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Formulário de Edição -->
+            <form id="cnhEditForm" class="p-6 max-h-96 overflow-y-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Coluna Esquerda - Dados Pessoais -->
+                    <div class="space-y-4">
+                        <!-- Dados Básicos -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-blue-900 mb-3 flex items-center">
+                                <i class="fas fa-user mr-2"></i>
+                                Dados Pessoais
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                                    <input type="text" id="editNomeCompleto" name="nome_completo"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+                                    <input type="text" id="editCpf" name="cpf"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+                                    <input type="date" id="editDataNascimento" name="data_nascimento"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                                    <select id="editSexo" name="sexo_condutor"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Feminino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local de Nascimento</label>
+                                    <input type="text" id="editLocalNascimento" name="local_nascimento"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF Nascimento</label>
+                                    <select id="editUfNascimento" name="uf_nascimento"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP">SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filiação -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-green-900 mb-3 flex items-center">
+                                <i class="fas fa-users mr-2"></i>
+                                Filiação
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Pai</label>
+                                    <input type="text" id="editNomePai" name="nome_pai"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Mãe</label>
+                                    <input type="text" id="editNomeMae" name="nome_mae"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documento de Identidade -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-yellow-900 mb-3 flex items-center">
+                                <i class="fas fa-id-badge mr-2"></i>
+                                Documento de Identidade
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                                    <input type="text" id="editDocNumero" name="doc_identidade_numero"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Órgão Emissor</label>
+                                    <input type="text" id="editDocOrgao" name="doc_identidade_orgao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF</label>
+                                    <select id="editDocUf" name="doc_identidade_uf"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP">SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita - Dados da CNH -->
+                    <div class="space-y-4">
+                        <!-- Dados da CNH -->
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-purple-900 mb-3 flex items-center">
+                                <i class="fas fa-car mr-2"></i>
+                                Dados da CNH
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                                    <input type="text" id="editCategoria" name="categoria_habilitacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF da CNH</label>
+                                    <select id="editUfCnh" name="uf_cnh"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ACC</label>
+                                    <select id="editAcc" name="acc"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="NAO">NÃO</option>
+                                        <option value="SIM">SIM</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local Municipio</label>
+                                    <input type="text" id="editLocalMunicipio" name="local_municipio"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local UF</label>
+                                    <select id="editLocalUf" name="local_uf"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datas -->
+                        <div class="bg-indigo-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-indigo-900 mb-3 flex items-center">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Datas
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">1ª Habilitação</label>
+                                    <input type="date" id="editPrimeiraHabilitacao" name="primeira_habilitacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Emissão</label>
+                                    <input type="date" id="editDataEmissao" name="data_emissao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Validade</label>
+                                    <input type="date" id="editValidade" name="validade"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Números de Controle -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                                <i class="fas fa-hashtag mr-2"></i>
+                                Números de Controle
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nº Registro</label>
+                                    <input type="text" id="editNumeroRegistro" name="numero_registro"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nº Espelho</label>
+                                    <input type="text" id="editNumeroEspelho" name="numero_espelho"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cód. Validação</label>
+                                    <input type="text" id="editCodigoValidacao" name="codigo_validacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">RENACH</label>
+                                    <input type="text" id="editNumeroRenach" name="numero_renach"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="mt-6 bg-orange-50 p-4 rounded-lg">
+                    <h4 class="text-md font-semibold text-orange-900 mb-3 flex items-center">
+                        <i class="fas fa-sticky-note mr-2"></i>
+                        Observações
+                    </h4>
+                    <textarea id="editObservacoes" name="observacoes" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              placeholder="Observações adicionais..."></textarea>
+                </div>
+            </form>
+
+            <!-- Footer do Modal -->
+            <div class="flex items-center justify-end p-4 border-t border-gray-200 space-x-3">
+                <button onclick="closeCNHEditModal()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button onclick="saveCNHChanges()" 
+                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal PIX - Design Moderno e Minimalista com Scroll -->
     <div id="pixModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-auto my-8 transform transition-all duration-300 scale-95 opacity-0 max-h-[85vh] overflow-y-auto flex flex-col" id="pixModalContent">
@@ -2267,6 +2542,12 @@
                                             Download
                                         </button>
                                     ` : ''}
+                                    
+                                    <button onclick="editCNH(${cnh.id})" 
+                                            class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors flex items-center gap-1">
+                                        <i class="fas fa-edit"></i>
+                                        Editar
+                                    </button>
                                     
                                     <button onclick="viewCNHDetails(${cnh.id})" 
                                             class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors flex items-center gap-1">
@@ -3018,6 +3299,185 @@
             document.body.style.overflow = '';
         }
 
+        // ==================== SISTEMA DE EDIÇÃO CNH ====================
+        
+        let currentEditingCNHId = null;
+
+        async function editCNH(cnhId) {
+            try {
+                console.log(`✏️ Iniciando edição da CNH ID: ${cnhId}`);
+                
+                // Buscar dados da CNH
+                const response = await fetch(`/api/cnh/details/${cnhId}`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar dados da CNH para edição');
+                }
+                
+                const data = await response.json();
+                const cnh = data.cnh;
+                
+                console.log('📊 Dados da CNH para edição:', cnh);
+                
+                // Armazenar ID da CNH sendo editada
+                currentEditingCNHId = cnhId;
+                
+                // Preencher formulário de edição
+                populateCNHEditForm(cnh);
+                
+                // Mostrar modal
+                document.getElementById('cnhEditModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Prevent background scroll
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar CNH para edição:', error);
+                showNotification('error', 'Erro', 'Erro ao carregar dados da CNH para edição. Tente novamente.');
+            }
+        }
+
+        function populateCNHEditForm(cnh) {
+            // Atualizar ID no cabeçalho
+            document.getElementById('editModalCnhId').textContent = cnh.id || 'N/A';
+            
+            // Função auxiliar para preencher campos
+            const setFieldValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = value || '';
+                }
+            };
+            
+            // Função auxiliar para converter data para formato input[type="date"]
+            const formatDateForInput = (dateStr) => {
+                if (!dateStr) return '';
+                try {
+                    const date = new Date(dateStr);
+                    return date.toISOString().split('T')[0];
+                } catch {
+                    return '';
+                }
+            };
+            
+            // Preencher dados pessoais
+            setFieldValue('editNomeCompleto', cnh.nome_completo);
+            setFieldValue('editCpf', cnh.cpf);
+            setFieldValue('editDataNascimento', formatDateForInput(cnh.data_nascimento));
+            setFieldValue('editSexo', cnh.sexo_condutor);
+            setFieldValue('editLocalNascimento', cnh.local_nascimento);
+            setFieldValue('editUfNascimento', cnh.uf_nascimento);
+            
+            // Preencher filiação
+            setFieldValue('editNomePai', cnh.nome_pai);
+            setFieldValue('editNomeMae', cnh.nome_mae);
+            
+            // Preencher documento de identidade
+            setFieldValue('editDocNumero', cnh.doc_identidade_numero);
+            setFieldValue('editDocOrgao', cnh.doc_identidade_orgao);
+            setFieldValue('editDocUf', cnh.doc_identidade_uf);
+            
+            // Preencher dados da CNH
+            setFieldValue('editCategoria', cnh.categoria_habilitacao || cnh.categoria);
+            setFieldValue('editUfCnh', cnh.uf_cnh);
+            setFieldValue('editAcc', cnh.acc);
+            setFieldValue('editLocalMunicipio', cnh.local_municipio);
+            setFieldValue('editLocalUf', cnh.local_uf);
+            
+            // Preencher datas
+            setFieldValue('editPrimeiraHabilitacao', formatDateForInput(cnh.primeira_habilitacao));
+            setFieldValue('editDataEmissao', formatDateForInput(cnh.data_emissao));
+            setFieldValue('editValidade', formatDateForInput(cnh.validade));
+            
+            // Preencher números de controle
+            setFieldValue('editNumeroRegistro', cnh.numero_registro);
+            setFieldValue('editNumeroEspelho', cnh.numero_espelho);
+            setFieldValue('editCodigoValidacao', cnh.codigo_validacao);
+            setFieldValue('editNumeroRenach', cnh.numero_renach);
+            
+            // Preencher observações
+            setFieldValue('editObservacoes', cnh.observacoes);
+        }
+
+        function closeCNHEditModal() {
+            document.getElementById('cnhEditModal').classList.add('hidden');
+            document.body.style.overflow = ''; // Restore background scroll
+            currentEditingCNHId = null;
+            
+            // Limpar formulário
+            document.getElementById('cnhEditForm').reset();
+        }
+
+        async function saveCNHChanges() {
+            if (!currentEditingCNHId) {
+                showNotification('error', 'Erro', 'Nenhuma CNH selecionada para edição');
+                return;
+            }
+
+            try {
+                console.log(`💾 Salvando alterações da CNH ID: ${currentEditingCNHId}`);
+                
+                // Coletar dados do formulário
+                const formData = new FormData(document.getElementById('cnhEditForm'));
+                const cnhData = {};
+                
+                // Converter FormData para objeto
+                for (let [key, value] of formData.entries()) {
+                    cnhData[key] = value;
+                }
+                
+                console.log('📝 Dados para salvar:', cnhData);
+                
+                // Desabilitar botão de salvar
+                const saveBtn = document.querySelector('button[onclick="saveCNHChanges()"]');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
+                
+                // Enviar dados para API
+                const response = await fetch(`/api/cnh/update/${currentEditingCNHId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(cnhData)
+                });
+                
+                const result = await response.json();
+                
+                // Restaurar botão
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                
+                if (response.ok && result.success) {
+                    console.log('✅ CNH atualizada com sucesso');
+                    
+                    // Mostrar notificação de sucesso
+                    showNotification('success', 'Sucesso!', 'CNH atualizada com sucesso');
+                    
+                    // Fechar modal
+                    closeCNHEditModal();
+                    
+                    // Recarregar lista de CNHs
+                    await loadMyCNHs(currentPage);
+                    
+                } else {
+                    console.error('❌ Erro ao salvar CNH:', result.error);
+                    showNotification('error', 'Erro ao salvar', result.error || 'Erro desconhecido ao salvar alterações');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro de conexão ao salvar CNH:', error);
+                showNotification('error', 'Erro de conexão', 'Erro ao conectar com o servidor. Tente novamente.');
+                
+                // Restaurar botão em caso de erro
+                const saveBtn = document.querySelector('button[onclick="saveCNHChanges()"]');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Alterações';
+            }
+        }
+
         // Fechar modais ao clicar fora
         document.addEventListener('click', function(event) {
             // Modal PIX
@@ -3032,10 +3492,16 @@
                 closePixSuccessModal();
             }
             
-            // Modal CNH (já existente)
+            // Modal CNH detalhes
             const cnhModal = document.getElementById('cnhDetailsModal');
             if (event.target === cnhModal) {
                 closeCNHModal();
+            }
+            
+            // Modal CNH edição
+            const cnhEditModal = document.getElementById('cnhEditModal');
+            if (event.target === cnhEditModal) {
+                closeCNHEditModal();
             }
         });
 
@@ -3045,6 +3511,7 @@
                 closePixModal();
                 closePixSuccessModal();
                 closeCNHModal();
+                closeCNHEditModal();
             }
         });
 

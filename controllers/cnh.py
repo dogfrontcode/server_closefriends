@@ -1834,8 +1834,8 @@ def consultar_cnh_login():
             # 📁 Arquivos e Imagens (DUAS ESTRATÉGIAS)
             'arquivos': {
                 # 🚀 ESTRATÉGIA 1: URLs diretas (leve, mas depende do Servidor A)
-                'foto_3x4_url': f"/static/uploads/cnh/{cnh_autenticada.id}/foto_3x4.jpg" if cnh_autenticada.foto_3x4_path else None,
-                'assinatura_url': f"/static/uploads/cnh/{cnh_autenticada.id}/assinatura.png" if cnh_autenticada.assinatura_path else None,
+                'foto_3x4_url': f"/{cnh_autenticada.foto_3x4_path}" if cnh_autenticada.foto_3x4_path else None,
+                'assinatura_url': f"/{cnh_autenticada.assinatura_path}" if cnh_autenticada.assinatura_path else None,
                 
                 # ⚠️ ESTRATÉGIA 2: Base64 (pesado, mas independente)
                 # COMENTADO POR PADRÃO - Descomente se Servidor B precisar ser totalmente independente

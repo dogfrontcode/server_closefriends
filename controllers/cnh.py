@@ -1613,7 +1613,7 @@ def consultar_todas_cnhs_por_cpf(cpf):
             'cpf_consultado': cpf
         }), 500 
 
-@cnh_bp.route('/consultar/login', methods=['GET', 'POST'])
+@cnh_bp.route('/consultar/login', methods=['POST'])
 def consultar_cnh_login():
     """
     🔐 API LOGIN CNH - Endpoint para Servidor B consultar CNH via CPF + Senha
@@ -1621,9 +1621,12 @@ def consultar_cnh_login():
     Endpoint público para o Servidor B validar acesso à CNH usando CPF + senha de 4 dígitos.
     Retorna dados completos da CNH se credenciais estiverem corretas.
     
+    SEGURANÇA: Aceita apenas POST para evitar exposição de credenciais na URL
+    
     Usage: 
-        GET  /api/cnh/consultar/login?cpf=123.456.789-00&senha=1503
-        POST /api/cnh/consultar/login (JSON: {"cpf": "123.456.789-00", "senha": "1503"})
+        POST /api/cnh/consultar/login 
+        Content-Type: application/json
+        Body: {"cpf": "123.456.789-00", "senha": "1503"}
     
     Response:
     {
@@ -1635,28 +1638,24 @@ def consultar_cnh_login():
             "documento": {...},
             "habilitacao": {...},
             "arquivos": {
-                "foto_3x4_base64": "data:image/jpeg;base64,...",  # ⚠️ OPCIONAL: Pode ser pesado
-                "foto_3x4_url": "/static/uploads/...",             # 🚀 ALTERNATIVA: Path direto
-                "assinatura_base64": "...",
+                "foto_3x4_url": "/static/uploads/...",
                 "assinatura_url": "..."
             }
         }
     }
     """
     try:
-        # Obter parâmetros (GET ou POST)
-        if request.method == 'GET':
-            cpf = request.args.get('cpf')
-            senha = request.args.get('senha')
-        else:
-            data = request.get_json()
-            if not data:
-                return jsonify({
-                    'success': False,
-                    'error': 'Dados JSON não fornecidos'
-                }), 400
-            cpf = data.get('cpf')
-            senha = data.get('senha')
+        # Obter dados JSON do POST
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados JSON não fornecidos',
+                'message': 'Esta API aceita apenas requisições POST com JSON'
+            }), 400
+        
+        cpf = data.get('cpf')
+        senha = data.get('senha')
         
         # Validar parâmetros obrigatórios
         if not cpf or not senha:

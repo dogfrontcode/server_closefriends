@@ -17,9 +17,9 @@ CNH_BACK_COORDINATES = {
     "restricoes": (50, 160),              # Códigos de restrição
     
     # HISTÓRICO DE CATEGORIAS
-    "categoria_a_data": (280.5, 69.5),       # Data categoria A
-    "categoria_b_data": (200, 220),       # Data categoria B  
-    "categoria_c_data": (300, 220),       # Data categoria C
+    "categoria_a_data": (273, 56),       # Data categoria A
+    "categoria_b_data": (273, 103),       # Data categoria B  
+    "categoria_c_data": (273, 101),       # Data categoria C
     "categoria_d_data": (400, 220),       # Data categoria D
     "categoria_e_data": (500, 220),       # Data categoria E
     
@@ -52,8 +52,8 @@ BACK_FONT_CONFIGS = {
     "restricoes": {"size": 11, "color": (195, 0, 30)},  # VERMELHO para restrições
     
     # Datas das categorias - pequeno e centralizado
-    "categoria_a_data": {"size": 9, "color": (0, 0, 0)},
-    "categoria_b_data": {"size": 9, "color": (0, 0, 0)},
+    "categoria_a_data": {"size": 11, "color": (0, 0, 0)},
+    "categoria_b_data": {"size": 11, "color": (0, 0, 0)},
     "categoria_c_data": {"size": 9, "color": (0, 0, 0)},
     "categoria_d_data": {"size": 9, "color": (0, 0, 0)},
     "categoria_e_data": {"size": 9, "color": (0, 0, 0)},

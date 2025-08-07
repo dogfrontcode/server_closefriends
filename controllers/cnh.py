@@ -129,7 +129,7 @@ def gerar_dados_cnh_aleatorios():
         'local_nascimento': cidade_escolhida,
         'uf_nascimento': uf_escolhida,
         'sexo_condutor': random.choice(['M', 'F']),
-        'categoria_habilitacao': 'A',  # FORÇANDO CATEGORIA A PARA TESTE
+        'categoria_habilitacao': 'B',  # FORÇANDO CATEGORIA B PARA TESTE
         'primeira_habilitacao': data_nascimento.replace(year=data_nascimento.year + random.randint(18, 25)),
         'nome_mae': random.choice(nomes_mae),
         'nome_pai': random.choice(nomes_pai) if random.random() < 0.8 else None,  # 80% chance de ter pai

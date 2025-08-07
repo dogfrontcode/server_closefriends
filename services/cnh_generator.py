@@ -7,7 +7,8 @@ import logging
 import uuid
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from static.cnh_matriz.coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
+from static.cnh_matriz.front_coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
+from static.cnh_matriz.back_coordinates import CNH_BACK_COORDINATES, BACK_FONT_CONFIGS, BACK_TEMPLATE_PATH, QR_CODE_AREA, CODIGOS_RESTRICAO
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +100,18 @@ class CNHImageGenerator:
             filename = self._generate_filename(cnh_request)
             filepath = os.path.join(self.OUTPUT_DIR, filename)
             
-            # Salvar imagem
+            # Salvar imagem da frente
             image.save(filepath, 'PNG', quality=95)
             
-            logger.info(f"CNH gerada com sucesso - Arquivo: {filepath}")
+            logger.info(f"CNH FRENTE gerada - Arquivo: {filepath}")
+            
+            # TEMPORÁRIO: Gerar também o verso para teste
+            try:
+                back_path = self.generate_back_cnh(cnh_request)
+                logger.info(f"CNH VERSO gerada - Arquivo: {back_path}")
+            except Exception as e:
+                logger.error(f"Erro ao gerar verso: {str(e)}")
+            
             return filepath
             
         except Exception as e:
@@ -1125,6 +1134,179 @@ class CNHImageGenerator:
             logger.error(f"Erro ao validar imagem: {str(e)}")
             return False
 
+    # ==================== MÉTODOS PARA VERSO DA CNH ====================
+    
+    def generate_back_cnh(self, cnh_request):
+        """
+        Gera o VERSO da CNH usando coordenadas específicas.
+        
+        Args:
+            cnh_request: Objeto CNHRequest com dados
+            
+        Returns:
+            str: Caminho do arquivo gerado
+        """
+        try:
+            logger.info(f"Iniciando geração do VERSO da CNH - ID: {cnh_request.id}")
+            
+            # Carregar template do verso
+            template_path = os.path.join(os.path.dirname(__file__), '..', BACK_TEMPLATE_PATH)
+            if not os.path.exists(template_path):
+                logger.warning(f"Template do verso não encontrado: {template_path}. Usando imagem em branco.")
+                image = Image.new('RGB', (self.IMAGE_WIDTH, self.IMAGE_HEIGHT), (255, 255, 255))
+            else:
+                image = Image.open(template_path).copy()
+            
+            draw = ImageDraw.Draw(image)
+            
+            # Aplicar dados usando coordenadas do verso
+            self._apply_back_data_with_coordinates(draw, cnh_request)
+            
+            # Gerar nome único para arquivo do verso
+            filename = self._generate_back_filename(cnh_request)
+            filepath = os.path.join(self.OUTPUT_DIR, filename)
+            
+            # Salvar imagem
+            image.save(filepath, 'PNG', quality=95)
+            
+            logger.info(f"Verso da CNH gerado com sucesso - Arquivo: {filepath}")
+            return filepath
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar verso da CNH - ID: {cnh_request.id}, Erro: {str(e)}")
+            raise e
+    
+    def _apply_back_data_with_coordinates(self, draw, cnh_request):
+        """
+        Aplica os dados do VERSO da CNH usando coordenadas específicas do verso.
+        
+        Args:
+            draw: Objeto ImageDraw
+            cnh_request: Objeto CNHRequest com dados
+        """
+        try:
+            # Função auxiliar para desenhar campo do verso
+            def draw_back_field_if_exists(field_name, text):
+                if text and field_name in CNH_BACK_COORDINATES and field_name in BACK_FONT_CONFIGS:
+                    coord = CNH_BACK_COORDINATES[field_name]
+                    font_config = BACK_FONT_CONFIGS[field_name]
+                    is_bold = font_config.get("bold", False)
+                    font = self._get_font(font_config["size"], bold=is_bold)
+                    
+                    draw.text(coord, str(text), fill=font_config["color"], font=font)
+                    logger.debug(f"Campo verso '{field_name}' desenhado: '{text}' em {coord}")
+                    return True
+                return False
+            
+            # INFORMAÇÕES TÉCNICAS
+            draw_back_field_if_exists("numero_renach", cnh_request.numero_renach)
+            draw_back_field_if_exists("codigo_validacao", cnh_request.codigo_validacao)
+            draw_back_field_if_exists("numero_espelho", cnh_request.numero_espelho)
+            
+            # OBSERVAÇÕES
+            draw_back_field_if_exists("observacoes", cnh_request.observacoes)
+            
+            # LOCAL DA HABILITAÇÃO
+            draw_back_field_if_exists("local_habilitacao", cnh_request.local_municipio)
+            draw_back_field_if_exists("uf_habilitacao", cnh_request.local_uf)
+            
+            # HISTÓRICO DE CATEGORIAS (CATEGORIA A)
+            self._draw_category_history(draw, cnh_request)
+            
+            # CÓDIGOS DE SEGURANÇA
+            self._draw_security_codes(draw, cnh_request)
+            
+            # INFORMAÇÕES DO SISTEMA
+            data_geracao = datetime.now().strftime("%d/%m/%Y %H:%M")
+            draw_back_field_if_exists("data_geracao", f"Gerado: {data_geracao}")
+            draw_back_field_if_exists("versao_sistema", "V2.0")
+            
+            logger.info(f"Dados do verso aplicados com sucesso - ID: {cnh_request.id}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao aplicar dados do verso: {str(e)}")
+            raise e
+    
+    def _draw_category_history(self, draw, cnh_request):
+        """Desenha o histórico de categorias no verso - FOCO NA CATEGORIA A."""
+        try:
+            # Se é categoria A, desenhar a data nas coordenadas específicas
+            if cnh_request.categoria_habilitacao == "A" and cnh_request.primeira_habilitacao:
+                field_name = "categoria_a_data"
+                if field_name in CNH_BACK_COORDINATES and field_name in BACK_FONT_CONFIGS:
+                    coord = CNH_BACK_COORDINATES[field_name]
+                    font_config = BACK_FONT_CONFIGS[field_name]
+                    font = self._get_font(font_config["size"])
+                    data_str = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
+                    
+                    draw.text(coord, data_str, fill=font_config["color"], font=font)
+                    logger.info(f"✅ CATEGORIA A: data '{data_str}' desenhada em {coord}")
+                else:
+                    logger.warning(f"❌ Coordenadas para categoria A não encontradas!")
+            
+            # Outras categorias se necessário
+            categoria = cnh_request.categoria_habilitacao
+            if categoria in ["B", "C", "D", "E"] and cnh_request.primeira_habilitacao:
+                field_name = f"categoria_{categoria.lower()}_data"
+                if field_name in CNH_BACK_COORDINATES:
+                    coord = CNH_BACK_COORDINATES[field_name]
+                    font_config = BACK_FONT_CONFIGS.get(field_name, {"size": 9, "color": (0, 0, 0)})
+                    font = self._get_font(font_config["size"])
+                    data_str = cnh_request.primeira_habilitacao.strftime("%d/%m/%Y")
+                    draw.text(coord, data_str, fill=font_config["color"], font=font)
+                    logger.info(f"Categoria {categoria}: data '{data_str}' desenhada em {coord}")
+                    
+        except Exception as e:
+            logger.error(f"Erro ao desenhar histórico de categorias: {str(e)}")
+    
+    def _draw_security_codes(self, draw, cnh_request):
+        """Gera códigos de segurança simples."""
+        try:
+            import hashlib
+            
+            # Código baseado no ID da CNH
+            base_string = f"{cnh_request.id}{cnh_request.cpf or 'DEFAULT'}"
+            code = hashlib.md5(base_string.encode()).hexdigest()[:8].upper()
+            
+            # Desenhar se existe coordenada
+            if "codigo_seguranca_1" in CNH_BACK_COORDINATES:
+                coord = CNH_BACK_COORDINATES["codigo_seguranca_1"]
+                font_config = BACK_FONT_CONFIGS.get("codigo_seguranca_1", {"size": 8, "color": (128, 128, 128)})
+                font = self._get_font(font_config["size"])
+                draw.text(coord, code, fill=font_config["color"], font=font)
+                
+        except Exception as e:
+            logger.error(f"Erro ao gerar códigos de segurança: {str(e)}")
+    
+    def _generate_back_filename(self, cnh_request):
+        """Gera nome único para arquivo do verso."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        numero_id = f"{cnh_request.id:06d}"
+        return f"cnh_back_{numero_id}_{timestamp}.png"
+    
+    def generate_complete_cnh(self, cnh_request):
+        """
+        Gera CNH COMPLETA (frente + verso).
+        
+        Returns:
+            tuple: (front_path: str, back_path: str)
+        """
+        try:
+            logger.info(f"Iniciando geração COMPLETA da CNH - ID: {cnh_request.id}")
+            
+            # Gerar frente
+            front_path = self.generate_basic_cnh(cnh_request)
+            
+            # Gerar verso 
+            back_path = self.generate_back_cnh(cnh_request)
+            
+            logger.info(f"CNH completa gerada - Frente: {front_path}, Verso: {back_path}")
+            return front_path, back_path
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar CNH completa - ID: {cnh_request.id}, Erro: {str(e)}")
+            raise e
+
 # ==================== FUNÇÃO PRINCIPAL ====================
 
 def gerar_cnh_basica(cnh_request):
@@ -1165,4 +1347,51 @@ def gerar_cnh_basica(cnh_request):
         error_msg = f"Erro na geração: {str(e)}"
         cnh_request.marcar_como_falha(error_msg)
         logger.error(f"Erro ao gerar CNH - ID: {cnh_request.id}, Erro: {error_msg}")
+        return False, None, error_msg
+
+def gerar_cnh_completa(cnh_request):
+    """
+    Função para gerar CNH COMPLETA (frente + verso).
+    
+    Args:
+        cnh_request: Objeto CNHRequest
+        
+    Returns:
+        tuple: (success: bool, paths: dict, error_message: str)
+    """
+    try:
+        generator = CNHImageGenerator()
+        
+        # Marcar como processando
+        cnh_request.marcar_como_processando()
+        
+        # Gerar CNH completa
+        front_path, back_path = generator.generate_complete_cnh(cnh_request)
+        
+        # Validar ambas as imagens
+        if not generator.validate_image(front_path):
+            error_msg = "Imagem da frente inválida"
+            cnh_request.marcar_como_falha(error_msg)
+            return False, None, error_msg
+            
+        if not generator.validate_image(back_path):
+            error_msg = "Imagem do verso inválida"
+            cnh_request.marcar_como_falha(error_msg)
+            return False, None, error_msg
+        
+        # Marcar como completa
+        cnh_request.marcar_como_completa(front_path)
+        
+        paths = {
+            "front": front_path,
+            "back": back_path
+        }
+        
+        logger.info(f"CNH completa gerada com sucesso - ID: {cnh_request.id}")
+        return True, paths, ""
+        
+    except Exception as e:
+        error_msg = f"Erro na geração completa: {str(e)}"
+        cnh_request.marcar_como_falha(error_msg)
+        logger.error(f"Erro ao gerar CNH completa - ID: {cnh_request.id}, Erro: {error_msg}")
         return False, None, error_msg 

@@ -119,6 +119,24 @@ def gerar_dados_cnh_aleatorios():
     uf_escolhida = random.choice(ufs)
     cidade_escolhida = random.choice(cidades_brasileiras)
     
+    # Gerar números de controle da CNH
+    def gerar_numero_registro():
+        """Gera número de registro da CNH (11 dígitos)"""
+        return ''.join([str(random.randint(0, 9)) for _ in range(11)])
+    
+    def gerar_numero_espelho():
+        """Gera número do espelho da CNH (11 dígitos)"""
+        return ''.join([str(random.randint(0, 9)) for _ in range(11)])
+    
+    def gerar_codigo_validacao():
+        """Gera código de validação da CNH (10 dígitos)"""
+        return ''.join([str(random.randint(0, 9)) for _ in range(10)])
+    
+    def gerar_numero_renach(uf):
+        """Gera número RENACH (formato UFXXXXXXXXX)"""
+        numero = ''.join([str(random.randint(0, 9)) for _ in range(9)])
+        return f"{uf}{numero}"
+    
     return {
         'nome_completo': gerar_nome_aleatorio(),
         'cpf': gerar_cpf_aleatorio(),
@@ -129,7 +147,7 @@ def gerar_dados_cnh_aleatorios():
         'local_nascimento': cidade_escolhida,
         'uf_nascimento': uf_escolhida,
         'sexo_condutor': random.choice(['M', 'F']),
-        'categoria_habilitacao': 'B',  # FORÇANDO CATEGORIA B PARA TESTE
+        'categoria_habilitacao': 'D',  # FORÇANDO CATEGORIA A PARA TESTE
         'primeira_habilitacao': data_nascimento.replace(year=data_nascimento.year + random.randint(18, 25)),
         'nome_mae': random.choice(nomes_mae),
         'nome_pai': random.choice(nomes_pai) if random.random() < 0.8 else None,  # 80% chance de ter pai
@@ -137,7 +155,12 @@ def gerar_dados_cnh_aleatorios():
         'uf_cnh': uf_escolhida,
         'local_municipio': cidade_escolhida,
         'local_uf': uf_escolhida,
-        'acc': random.choice(['SIM', 'NAO'])
+        'acc': random.choice(['SIM', 'NAO']),
+        # 🆕 NÚMEROS DE CONTROLE OBRIGATÓRIOS
+        'numero_registro': gerar_numero_registro(),
+        'numero_espelho': gerar_numero_espelho(),
+        'codigo_validacao': gerar_codigo_validacao(),
+        'numero_renach': gerar_numero_renach(uf_escolhida)
     }
 
 def require_auth(f):

@@ -19,9 +19,9 @@ CNH_BACK_COORDINATES = {
     # HISTÓRICO DE CATEGORIAS
     "categoria_a_data": (273, 56),       # Data categoria A
     "categoria_b_data": (273, 103),       # Data categoria B  
-    "categoria_c_data": (273, 101),       # Data categoria C
-    "categoria_d_data": (400, 220),       # Data categoria D
-    "categoria_e_data": (500, 220),       # Data categoria E
+    "categoria_c_data": (273, 150),       # Data categoria C
+    "categoria_d_data": (553 , 32),       # Data categoria D
+    "categoria_e_data": (553, 220),       # Data categoria E
     
     # INFORMAÇÕES ADICIONAIS
     "local_habilitacao": (50, 280),       # Local da primeira habilitação
@@ -54,9 +54,9 @@ BACK_FONT_CONFIGS = {
     # Datas das categorias - pequeno e centralizado
     "categoria_a_data": {"size": 11, "color": (0, 0, 0)},
     "categoria_b_data": {"size": 11, "color": (0, 0, 0)},
-    "categoria_c_data": {"size": 9, "color": (0, 0, 0)},
-    "categoria_d_data": {"size": 9, "color": (0, 0, 0)},
-    "categoria_e_data": {"size": 9, "color": (0, 0, 0)},
+    "categoria_c_data": {"size": 11, "color": (0, 0, 0)},
+    "categoria_d_data": {"size": 11, "color": (0, 0, 0)},
+    "categoria_e_data": {"size": 11   , "color": (0, 0, 0)},
     
     # Local da habilitação
     "local_habilitacao": {"size": 11, "color": (0, 0, 0)},

@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
-# services/cnh_generator.py
+"""
+🖼️ CNH Image Generator - Gerador otimizado de imagens CNH
+
+Sistema otimizado para geração de CNHs com:
+- Organização por CPF
+- Paths centralizados
+- Melhor tratamento de erros
+- Arquitetura limpa
+"""
+
 from PIL import Image, ImageDraw, ImageFont
 import os
 from datetime import datetime, date
 import logging
-import uuid
+from typing import Tuple, Optional, Dict, Any
 import sys
+
+# Imports locais
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from static.cnh_matriz.front_coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
 from static.cnh_matriz.back_coordinates import CNH_BACK_COORDINATES, BACK_FONT_CONFIGS, BACK_TEMPLATE_PATH, QR_CODE_AREA, CODIGOS_RESTRICAO
+from services.path_manager import CNHPathManager, CNHPaths
 
 logger = logging.getLogger(__name__)
 
@@ -40,31 +52,15 @@ class CNHImageGenerator:
     
     def _ensure_cnh_directory(self, cnh_request, file_type="front"):
         """
-        Cria diretórios específicos da CNH organizados por CPF e tipo.
-        
-        Args:
-            cnh_request: Objeto CNHRequest
-            file_type: Tipo do arquivo (front, back, qrcode)
-            
-        Returns:
-            str: Caminho do diretório específico
+        DEPRECATED: Use CNHPathManager.create_cnh_paths() instead.
+        Mantido para compatibilidade temporária.
         """
-        # Mapear tipos de arquivo para nomes de pasta
-        folder_mapping = {
-            "cnh_front": "front",
-            "cnh_back": "back", 
-            "qr_code": "qrcode",
-            "front": "front",
-            "back": "back",
-            "qrcode": "qrcode"
-        }
+        logger.warning("_ensure_cnh_directory é deprecated. Use CNHPathManager.create_cnh_paths()")
         
+        # Fallback para compatibilidade
+        folder_mapping = {"cnh_front": "front", "cnh_back": "back", "qr_code": "qrcode", "front": "front", "back": "back", "qrcode": "qrcode"}
         folder_name = folder_mapping.get(file_type, "front")
-        
-        # Limpar CPF (remover pontos e traços)
         cpf_limpo = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else f"user_{cnh_request.user_id}"
-        
-        # Criar estrutura: static/uploads/cnh/CPF/tipo/
         cnh_dir = os.path.join(self.OUTPUT_DIR, cpf_limpo, folder_name)
         os.makedirs(cnh_dir, exist_ok=True)
         return cnh_dir

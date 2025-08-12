@@ -5,6 +5,8 @@ from models.cnh_request import CNHRequest
 from models.user import User
 from models import db
 from services.cnh_generator import gerar_cnh_basica
+from security.rate_limiter import rate_limit_decorator
+from security.validators import SecurityValidator
 from datetime import datetime, timedelta
 import threading
 import logging
@@ -1726,6 +1728,7 @@ def _check_cnh_back_exists(cnh_request):
     return bool(back_path)
 
 @cnh_bp.route('/consultar/login', methods=['POST'])
+@rate_limit_decorator(max_attempts=3, window_seconds=300, block_seconds=900)
 def consultar_cnh_login():
     """
     🔐 API LOGIN CNH - Endpoint para Servidor B consultar CNH via CPF + Senha
@@ -1774,22 +1777,46 @@ def consultar_cnh_login():
             return jsonify({
                 'success': False,
                 'authenticated': False,
-                'error': 'CPF e senha são obrigatórios',
-                'required_params': ['cpf', 'senha']
+                'error': 'CPF e senha são obrigatórios'
             }), 400
         
-        # Limpar e formatar CPF
-        cpf_limpo = ''.join(filter(str.isdigit, cpf))
+        # 🔒 VALIDAÇÃO DE SEGURANÇA APRIMORADA
         
-        if len(cpf_limpo) != 11:
+        # Detectar requisições suspeitas
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if client_ip and ',' in client_ip:
+            client_ip = client_ip.split(',')[0].strip()
+        
+        is_suspicious, reason = SecurityValidator.is_suspicious_request(data, client_ip)
+        if is_suspicious:
+            logger.warning(f"🚨 Requisição suspeita bloqueada - IP: {client_ip}, Motivo: {reason}")
             return jsonify({
                 'success': False,
                 'authenticated': False,
-                'error': 'CPF deve conter 11 dígitos',
-                'cpf_informado': cpf
+                'error': 'Requisição inválida'
             }), 400
         
-        cpf_formatado = f"{cpf_limpo[:3]}.{cpf_limpo[3:6]}.{cpf_limpo[6:9]}-{cpf_limpo[9:]}"
+        # Validar CPF com verificadores
+        cpf_valido, cpf_limpo, erro_cpf = SecurityValidator.validate_cpf(cpf)
+        if not cpf_valido:
+            logger.warning(f"🚨 CPF inválido tentativa - IP: {client_ip}, Erro: {erro_cpf}")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'CPF inválido'
+            }), 400
+        
+        # Validar senha
+        senha_valida, erro_senha = SecurityValidator.validate_password(senha, 4, 4)
+        if not senha_valida:
+            logger.warning(f"🚨 Senha inválida tentativa - IP: {client_ip}, Erro: {erro_senha}")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Senha inválida'
+            }), 400
+        
+        cpf_formatado = SecurityValidator.format_cpf(cpf_limpo)
         
         # Buscar CNH por CPF (formatado e não formatado)
         cnhs_formatado = CNHRequest.query.filter_by(cpf=cpf_formatado).all()
@@ -1797,12 +1824,13 @@ def consultar_cnh_login():
         cnhs_encontradas = list({cnh.id: cnh for cnh in (cnhs_formatado + cnhs_limpo)}.values())
         
         if not cnhs_encontradas:
+            # 🔒 Não vazar informações sobre existência de CPFs
+            logger.warning(f"🚨 Tentativa de acesso a CPF inexistente - IP: {client_ip}, CPF: {cpf_limpo[:3]}***")
             return jsonify({
                 'success': False,
                 'authenticated': False,
-                'error': 'CNH não encontrada para este CPF',
-                'cpf_consultado': cpf_formatado
-            }), 404
+                'error': 'Credenciais inválidas'
+            }), 401
         
         # Ordenar por data de criação (mais recente primeiro)
         cnhs_encontradas.sort(key=lambda x: x.created_at, reverse=True)
@@ -1815,13 +1843,11 @@ def consultar_cnh_login():
                 break
         
         if not cnh_autenticada:
-            logger.warning(f"🚫 Tentativa de login CNH falhada - CPF: {cpf_formatado}, Senha: {senha}")
+            logger.warning(f"🚫 Tentativa de login CNH falhada - IP: {client_ip}, CPF: {cpf_limpo[:3]}***")
             return jsonify({
                 'success': False,
                 'authenticated': False,
-                'error': 'Senha incorreta para este CPF',
-                'cpf_consultado': cpf_formatado,
-                'cnhs_encontradas': len(cnhs_encontradas)
+                'error': 'Credenciais inválidas'
             }), 401
         
         # ✅ AUTENTICAÇÃO BEM-SUCEDIDA - Preparar dados para retorno

@@ -24,7 +24,7 @@ class CNHImageGenerator:
     TEXT_COLOR = (0, 0, 0)  # Preto para texto
     
     # Diretórios
-    OUTPUT_DIR = "static/generated_cnhs"
+    OUTPUT_DIR = "static/uploads/cnh"  # Nova estrutura em uploads
     FONTS_DIR = "static/fonts"
     TEMPLATE_PATH = "static/cnh_matriz/front-cnh.png"
     
@@ -37,6 +37,34 @@ class CNHImageGenerator:
         """Cria diretórios necessários se não existirem."""
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.FONTS_DIR, exist_ok=True)
+    
+    def _ensure_user_directory(self, user_id, file_type="front"):
+        """
+        Cria diretórios específicos do usuário organizados por tipo.
+        
+        Args:
+            user_id: ID do usuário
+            file_type: Tipo do arquivo (front, back, qrcode)
+            
+        Returns:
+            str: Caminho do diretório específico
+        """
+        # Mapear tipos de arquivo para nomes de pasta
+        folder_mapping = {
+            "cnh_front": "front",
+            "cnh_back": "back", 
+            "qr_code": "qrcode",
+            "front": "front",
+            "back": "back",
+            "qrcode": "qrcode"
+        }
+        
+        folder_name = folder_mapping.get(file_type, "front")
+        
+        # Criar estrutura: static/uploads/cnh/user_X/tipo/
+        user_dir = os.path.join(self.OUTPUT_DIR, f"user_{user_id}", folder_name)
+        os.makedirs(user_dir, exist_ok=True)
+        return user_dir
     
     def _load_fonts(self):
         """Carrega fontes para uso na imagem com suporte UTF-8."""
@@ -57,12 +85,13 @@ class CNHImageGenerator:
             self.data_font = ImageFont.load_default()
             self.small_font = ImageFont.load_default()
     
-    def generate_basic_cnh(self, cnh_request):
+    def generate_basic_cnh(self, cnh_request, output_path=None):
         """
         Gera CNH usando template oficial com coordenadas precisas.
         
         Args:
             cnh_request: Objeto CNHRequest com dados
+            output_path: Caminho específico para salvar (opcional)
             
         Returns:
             str: Caminho do arquivo gerado
@@ -96,9 +125,16 @@ class CNHImageGenerator:
                 # Fallback: desenhar apenas o nome no centro para testar
                 draw.text((100, 200), cnh_request.nome_completo or "TESTE", fill=(0, 0, 0))
             
-            # Gerar nome único para arquivo
-            filename = self._generate_filename(cnh_request)
-            filepath = os.path.join(self.OUTPUT_DIR, filename)
+            # Usar path específico ou gerar automaticamente
+            if output_path:
+                filepath = output_path
+                # Garantir que o diretório existe
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            else:
+                # Criar diretório do usuário e gerar nome único para arquivo
+                user_dir = self._ensure_user_directory(cnh_request.user_id, "cnh_front")
+                filename = self._generate_filename(cnh_request, "cnh_front")
+                filepath = os.path.join(user_dir, filename)
             
             # Salvar imagem da frente
             image.save(filepath, 'PNG', quality=95)
@@ -531,6 +567,78 @@ class CNHImageGenerator:
             
         except Exception as e:
             logger.error(f"Erro ao desenhar número habilitação vertical: {str(e)}")
+            # Fallback: usar o método de texto rotacionado padrão
+            font = self._get_font(10, bold=True)
+            self._draw_rotated_text(draw, numero_text, position, font, (0, 0, 0), rotation=90)
+    
+    def _draw_numero_espelho_vertical(self, draw, numero_text, position):
+        """
+        Desenha o número do espelho verticalmente no verso, igual ao número da habilitação.
+        
+        Args:
+            draw: Objeto ImageDraw
+            numero_text: Texto do número do espelho
+            position: Posição (x, y) onde desenhar
+        """
+        try:
+            x, y = position
+            area_width = 23
+            area_height = 161
+            
+            # Configurar fonte bold (mesmo estilo do número da habilitação)
+            font_config = BACK_FONT_CONFIGS.get("numero_espelho", {"size": 12, "bold": True})
+            is_bold = font_config.get("bold", True)
+            font_size = font_config.get("size", 12)
+            color = font_config.get("color", (0, 0, 0))
+            
+            # Começar com o tamanho da fonte especificado
+            current_font_size = font_size
+            font = self._get_font(current_font_size, bold=is_bold)
+            
+            # Calcular dimensões do texto
+            bbox = draw.textbbox((0, 0), numero_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Ajustar fonte para caber na altura disponível (considerando rotação)
+            while text_width > area_height - 10 and current_font_size > 6:
+                current_font_size -= 1
+                font = self._get_font(current_font_size, bold=is_bold)
+                bbox = draw.textbbox((0, 0), numero_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            
+            # Criar imagem temporária com espaço suficiente
+            temp_width = text_width + 20  # margem extra
+            temp_height = text_height + 20  # margem extra
+            temp_img = Image.new('RGBA', (temp_width, temp_height), (255, 255, 255, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Desenhar texto centralizado na imagem temporária
+            text_x = (temp_width - text_width) // 2
+            text_y = (temp_height - text_height) // 2
+            temp_draw.text((text_x, text_y), numero_text, font=font, fill=color)
+            
+            # Rotacionar 90 graus para ficar vertical
+            rotated_img = temp_img.rotate(90, expand=True)
+            
+            # Calcular posição final para centralizar na área designada
+            final_x = x - (rotated_img.width - area_width) // 2
+            final_y = y + (area_height - rotated_img.height) // 2
+            
+            # Garantir que não saia dos limites
+            if final_x < 0:
+                final_x = x
+            if final_y < 0:
+                final_y = y
+            
+            # Colar na imagem principal
+            draw._image.paste(rotated_img, (final_x, final_y), rotated_img)
+            
+            logger.debug(f"Número espelho vertical '{numero_text}' desenhado em {position} com fonte {current_font_size}px")
+            
+        except Exception as e:
+            logger.error(f"Erro ao desenhar número espelho vertical: {str(e)}")
             # Fallback: usar o método de texto rotacionado padrão
             font = self._get_font(10, bold=True)
             self._draw_rotated_text(draw, numero_text, position, font, (0, 0, 0), rotation=90)
@@ -1043,20 +1151,48 @@ class CNHImageGenerator:
         text_y = y + 12
         draw.text((text_x, text_y), cat_text, fill=(255, 255, 255), font=self.title_font)
     
-    def _generate_filename(self, cnh_request):
+    def _generate_filename(self, cnh_request, file_type="cnh"):
         """
-        Gera nome único para arquivo da CNH.
+        Gera nome simples e intuitivo para arquivo da CNH.
+        
+        Args:
+            cnh_request: Objeto CNHRequest
+            file_type: Tipo do arquivo (cnh_front, cnh_back, qr_code)
+            
+        Returns:
+            str: Nome do arquivo
+        """
+        # Nome simples: apenas o ID da CNH
+        # Como está em pastas organizadas por usuário e tipo, não precisa ser complexo
+        filename = f"{cnh_request.id}.png"
+        return filename
+    
+    def get_cnh_paths(self, cnh_request):
+        """
+        Gera os paths organizados para todos os tipos de imagem CNH.
         
         Args:
             cnh_request: Objeto CNHRequest
             
         Returns:
-            str: Nome do arquivo
+            dict: Dicionário com paths da frente, verso e QR code
         """
-        # Usar ID da CNH + timestamp para garantir unicidade
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"cnh_{cnh_request.id:06d}_{timestamp}.png"
-        return filename
+        # Nome simples: apenas ID.png
+        filename = f"{cnh_request.id}.png"
+        
+        # Diretórios específicos por tipo
+        front_dir = self._ensure_user_directory(cnh_request.user_id, "front")
+        back_dir = self._ensure_user_directory(cnh_request.user_id, "back")
+        qrcode_dir = self._ensure_user_directory(cnh_request.user_id, "qrcode")
+        
+        return {
+            "front_path": os.path.join(front_dir, filename),
+            "back_path": os.path.join(back_dir, filename),
+            "qrcode_path": os.path.join(qrcode_dir, filename),
+            "front_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/front/{filename}",
+            "back_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/back/{filename}",
+            "qrcode_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/qrcode/{filename}"
+        }
     
     def generate_thumbnail(self, image_path, max_size=(200, 150)):
         """
@@ -1136,12 +1272,13 @@ class CNHImageGenerator:
 
     # ==================== MÉTODOS PARA VERSO DA CNH ====================
     
-    def generate_back_cnh(self, cnh_request):
+    def generate_back_cnh(self, cnh_request, output_path=None):
         """
         Gera o VERSO da CNH usando coordenadas específicas.
         
         Args:
             cnh_request: Objeto CNHRequest com dados
+            output_path: Caminho específico para salvar (opcional)
             
         Returns:
             str: Caminho do arquivo gerado
@@ -1162,9 +1299,16 @@ class CNHImageGenerator:
             # Aplicar dados usando coordenadas do verso
             self._apply_back_data_with_coordinates(draw, cnh_request)
             
-            # Gerar nome único para arquivo do verso
-            filename = self._generate_back_filename(cnh_request)
-            filepath = os.path.join(self.OUTPUT_DIR, filename)
+            # Usar path específico ou gerar automaticamente
+            if output_path:
+                filepath = output_path
+                # Garantir que o diretório existe
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            else:
+                # Criar diretório do usuário e gerar nome único para arquivo do verso
+                user_dir = self._ensure_user_directory(cnh_request.user_id, "cnh_back")
+                filename = self._generate_filename(cnh_request, "cnh_back")
+                filepath = os.path.join(user_dir, filename)
             
             # Salvar imagem
             image.save(filepath, 'PNG', quality=95)
@@ -1207,7 +1351,13 @@ class CNHImageGenerator:
             
             draw_back_field_if_exists("numero_renach", cnh_request.numero_renach)
             draw_back_field_if_exists("codigo_validacao", cnh_request.codigo_validacao)
-            draw_back_field_if_exists("numero_espelho", cnh_request.numero_espelho)
+            
+            # NÚMERO DO ESPELHO (vertical como na frente)
+            numero_espelho = cnh_request.numero_espelho or f"{cnh_request.id + 1000000000:011d}"
+            if numero_espelho:
+                espelho_coord = CNH_BACK_COORDINATES.get("numero_espelho", (100, 80))
+                self._draw_numero_espelho_vertical(draw, str(numero_espelho), espelho_coord)
+            
             # NÚMERO DO REGISTRO DA CNH (lateral esquerda)
             draw_back_field_if_exists("numero_registro", cnh_request.numero_registro)
             
@@ -1286,11 +1436,7 @@ class CNHImageGenerator:
         except Exception as e:
             logger.error(f"Erro ao gerar códigos de segurança: {str(e)}")
     
-    def _generate_back_filename(self, cnh_request):
-        """Gera nome único para arquivo do verso."""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        numero_id = f"{cnh_request.id:06d}"
-        return f"cnh_back_{numero_id}_{timestamp}.png"
+
     
     def generate_complete_cnh(self, cnh_request):
         """
@@ -1319,13 +1465,14 @@ class CNHImageGenerator:
 
 def gerar_cnh_basica(cnh_request):
     """
-    Função principal para gerar CNH básica.
+    Função principal para gerar CNH básica com estrutura organizada.
     
     Args:
         cnh_request: Objeto CNHRequest
         
     Returns:
-        tuple: (success: bool, image_path: str, error_message: str)
+        tuple: (success: bool, paths_dict: dict, error_message: str)
+        paths_dict contém: front_path, back_path, qrcode_path (relativos)
     """
     try:
         generator = CNHImageGenerator()
@@ -1333,23 +1480,42 @@ def gerar_cnh_basica(cnh_request):
         # Marcar como processando
         cnh_request.marcar_como_processando()
         
-        # Gerar imagem
-        image_path = generator.generate_basic_cnh(cnh_request)
+        # Obter paths organizados
+        paths = generator.get_cnh_paths(cnh_request)
         
-        # Validar imagem gerada
-        if not generator.validate_image(image_path):
-            error_msg = "Imagem gerada é inválida"
+        # Gerar frente e verso usando paths específicos
+        front_path = generator.generate_basic_cnh(cnh_request, paths["front_path"])
+        back_path = generator.generate_back_cnh(cnh_request, paths["back_path"])
+        
+        # Validar imagens geradas
+        if not generator.validate_image(front_path):
+            error_msg = "Imagem da frente é inválida"
+            cnh_request.marcar_como_falha(error_msg)
+            return False, None, error_msg
+            
+        if not generator.validate_image(back_path):
+            error_msg = "Imagem do verso é inválida"
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
         
-        # Gerar thumbnail (opcional) - DESABILITADO para evitar imagens duplicadas
-        # generator.generate_thumbnail(image_path)
+        # Preparar paths relativos para retorno
+        result_paths = {
+            "front_path": front_path,
+            "back_path": back_path,
+            "qrcode_path": paths["qrcode_path"],
+            "front_relative": paths["front_relative"],
+            "back_relative": paths["back_relative"],
+            "qrcode_relative": paths["qrcode_relative"]
+        }
         
-        # Marcar como completa
-        cnh_request.marcar_como_completa(image_path)
+        # Marcar como completa com path da frente (compatibilidade)
+        cnh_request.marcar_como_completa(front_path)
         
-        logger.info(f"CNH gerada com sucesso - ID: {cnh_request.id}, Arquivo: {image_path}")
-        return True, image_path, ""
+        logger.info(f"CNH gerada com sucesso - ID: {cnh_request.id}")
+        logger.info(f"  Frente: {front_path}")
+        logger.info(f"  Verso: {back_path}")
+        
+        return True, result_paths, ""
         
     except Exception as e:
         error_msg = f"Erro na geração: {str(e)}"

@@ -46,7 +46,7 @@ BACK_FONT_CONFIGS = {
     # Códigos técnicos - fonte menor e monospaciada
     "numero_renach": {"size": 10, "color": (0, 0, 0), "bold": True},
     "codigo_validacao": {"size": 10, "color": (0, 0, 0), "bold": True},
-    "numero_espelho": {"size": 10, "color": (0, 0, 0)},
+    "numero_espelho": {"size": 12, "color": (0, 0, 0), "bold": True},  # Vertical como na frente
     "numero_registro": {"size": 12, "color": (0, 0, 0), "bold": True},  # Número da CNH no verso
     
     # Observações - texto normal

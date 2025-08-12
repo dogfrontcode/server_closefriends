@@ -376,6 +376,9 @@ class CNHRequest(db.Model):
                 # FALLBACK: sempre 0101 se der qualquer problema
                 cnh_request.cnh_password = "0101"
             
+            # 🆕 GERAR NÚMEROS DE CONTROLE SE NÃO FORNECIDOS
+            cnh_request._gerar_numeros_controle_se_necessario()
+            
             db.session.add(cnh_request)
             db.session.flush()  # Para obter o ID
             
@@ -616,3 +619,34 @@ class CNHRequest(db.Model):
         except:
             # FALLBACK: se der qualquer erro, comparar com 0101
             return str(senha_informada).strip() == "0101" 
+    
+    def _gerar_numeros_controle_se_necessario(self):
+        """
+        Gera automaticamente os números de controle se eles não estiverem preenchidos.
+        Usado para garantir que CNHs manuais tenham todos os números necessários.
+        """
+        import random
+        
+        # Gerar número de registro se não existir
+        if not self.numero_registro:
+            self.numero_registro = ''.join([str(random.randint(0, 9)) for _ in range(11)])
+        
+        # Gerar número do espelho se não existir
+        if not self.numero_espelho:
+            self.numero_espelho = ''.join([str(random.randint(0, 9)) for _ in range(11)])
+        
+        # Gerar código de validação se não existir
+        if not self.codigo_validacao:
+            self.codigo_validacao = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+        
+        # Gerar número RENACH se não existir
+        if not self.numero_renach:
+            uf = self.uf_cnh or self.uf_nascimento or 'SP'
+            numero = ''.join([str(random.randint(0, 9)) for _ in range(9)])
+            self.numero_renach = f"{uf}{numero}"
+        
+        logger.info(f"Números de controle gerados para CNH ID: {self.id or 'novo'}")
+        logger.info(f"  Registro: {self.numero_registro}")
+        logger.info(f"  Espelho: {self.numero_espelho}")
+        logger.info(f"  Validação: {self.codigo_validacao}")
+        logger.info(f"  RENACH: {self.numero_renach}")

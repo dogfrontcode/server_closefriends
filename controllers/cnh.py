@@ -241,14 +241,27 @@ def generate_cnh():
             logger.warning(f"Erro no upload de arquivos - CNH ID: {cnh_request.id}, Erro: {upload_error}")
             # Continuar mesmo com erro no upload (arquivos são opcionais)
         
+        # Capturar o app atual para usar na thread
+        from flask import current_app
+        app_context = current_app._get_current_object()
+        
         # Gerar imagem em background (assíncrono)
         def generate_async():
             try:
-                from __init__ import app
-                with app.app_context():
-                    gerar_cnh_basica(cnh_request)
+                with app_context.app_context():
+                    # Obter instância fresh do banco para a thread
+                    cnh_fresh = db.session.get(CNHRequest, cnh_request.id)
+                    
+                    success, paths_dict, error = gerar_cnh_basica(cnh_fresh)
+                    if not success:
+                        logger.error(f"Falha na geração assíncrona - CNH ID: {cnh_fresh.id}, Erro: {error}")
+                    else:
+                        front_path = paths_dict["front_path"] if paths_dict else "N/A"
+                        logger.info(f"Geração assíncrona bem-sucedida - CNH ID: {cnh_fresh.id}, Frente: {front_path}")
             except Exception as e:
                 logger.error(f"Erro na geração assíncrona - CNH ID: {cnh_request.id}, Erro: {str(e)}")
+                import traceback
+                traceback.print_exc()
         
         # Iniciar geração em thread separada
         generation_thread = threading.Thread(target=generate_async)
@@ -271,7 +284,7 @@ def generate_cnh():
 def get_my_cnhs():
     """
     Endpoint para listar CNHs do usuário.
-    Verifica automaticamente CNHs pendentes com timeout de 15 segundos.
+    Verifica automaticamente CNHs pendentes com timeout de 30 segundos.
     
     Query params opcionais:
     - page: página (default 1)
@@ -600,13 +613,13 @@ def validate_cnh_data():
 def check_and_fix_pending_cnhs():
     """
     Verifica CNHs pendentes e corrige automaticamente se arquivo existe.
-    Timeout de 15 segundos para liberar download.
+    Timeout de 30 segundos para liberar download.
     """
     try:
         from __init__ import db
         
-        # Buscar CNHs pendentes ou em processamento há mais de 15 segundos
-        timeout_time = datetime.utcnow() - timedelta(seconds=15)
+        # Buscar CNHs pendentes ou em processamento há mais de 30 segundos
+        timeout_time = datetime.utcnow() - timedelta(seconds=30)
         
         stuck_cnhs = CNHRequest.query.filter(
             CNHRequest.status.in_(['pending', 'processing']),
@@ -637,7 +650,7 @@ def check_and_fix_pending_cnhs():
             else:
                 # Arquivo não existe, marcar como falha
                 cnh.status = 'failed'
-                cnh.error_message = 'Timeout na geração (15 segundos)'
+                cnh.error_message = 'Timeout na geração (30 segundos)'
                 
                 logger.warning(f"CNH {cnh.id} marcada como falha por timeout")
             
@@ -1196,6 +1209,9 @@ def _generate_random_cnh_internal(async_generation=True):
             numero_renach=dados_aleatorios['numero_renach']
         )
         
+        # 🆕 Definir senha CNH baseada na data de nascimento
+        cnh_request.set_senha_cnh()
+        
         # Salvar no banco
         db.session.add(cnh_request)
         db.session.commit()
@@ -1208,11 +1224,15 @@ def _generate_random_cnh_internal(async_generation=True):
                 from flask import current_app
                 try:
                     with current_app.app_context():
-                        sucesso, caminho_imagem, erro = gerar_cnh_basica(cnh_request)
+                        # Obter instância fresh do banco para a thread
+                        cnh_fresh = db.session.get(CNHRequest, cnh_request.id)
+                        
+                        sucesso, paths_dict, erro = gerar_cnh_basica(cnh_fresh)
                         if sucesso:
-                            logger.info(f"CNH aleatória gerada com sucesso - ID: {cnh_request.id}, Arquivo: {caminho_imagem}")
+                            front_path = paths_dict["front_path"] if paths_dict else "N/A"
+                            logger.info(f"CNH aleatória gerada com sucesso - ID: {cnh_fresh.id}, Frente: {front_path}")
                         else:
-                            logger.error(f"Erro na geração da CNH aleatória - ID: {cnh_request.id}, Erro: {erro}")
+                            logger.error(f"Erro na geração da CNH aleatória - ID: {cnh_fresh.id}, Erro: {erro}")
                 except Exception as e:
                     logger.error(f"Erro na thread de geração - ID: {cnh_request.id}, Erro: {str(e)}")
             
@@ -1237,9 +1257,10 @@ def _generate_random_cnh_internal(async_generation=True):
         else:
             # Gerar a imagem sincronamente
             try:
-                sucesso, caminho_imagem, erro = gerar_cnh_basica(cnh_request)
+                sucesso, paths_dict, erro = gerar_cnh_basica(cnh_request)
                 if sucesso:
-                    logger.info(f"CNH aleatória gerada com sucesso (sync) - ID: {cnh_request.id}, Arquivo: {caminho_imagem}")
+                    front_path = paths_dict["front_path"] if paths_dict else "N/A"
+                    logger.info(f"CNH aleatória gerada com sucesso (sync) - ID: {cnh_request.id}, Frente: {front_path}")
                     return jsonify({
                         'success': True,
                         'message': 'CNH aleatória gerada com sucesso!',
@@ -1250,6 +1271,11 @@ def _generate_random_cnh_internal(async_generation=True):
                         'image_url': f'/api/cnh/view/{cnh_request.id}',
                         'info_url': f'/api/cnh/info/{cnh_request.id}',
                         'status': 'completed',
+                        'paths': {
+                            'front': paths_dict["front_relative"],
+                            'back': paths_dict["back_relative"], 
+                            'qrcode': paths_dict["qrcode_relative"]
+                        },
                         'note': 'A imagem está pronta para visualização!'
                     }), 201
                 else:
@@ -1642,6 +1668,53 @@ def consultar_todas_cnhs_por_cpf(cpf):
             'cpf_consultado': cpf
         }), 500 
 
+# ==================== FUNÇÕES AUXILIARES PARA PATHS ====================
+
+def _get_cnh_back_path(cnh_request):
+    """Retorna o path do verso da CNH baseado na nova estrutura organizada."""
+    if not cnh_request.generated_image_path:
+        return None
+    
+    import os
+    front_path = cnh_request.generated_image_path
+    
+    # Nova estrutura: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/back/ID.png
+    if '/front/' in front_path:
+        back_path = front_path.replace('/front/', '/back/')
+        return back_path if os.path.exists(back_path) else None
+    
+    # Fallback para estrutura antiga (compatibilidade)
+    if 'cnh_front_' in front_path:
+        back_path = front_path.replace('cnh_front_', 'cnh_back_')
+        return back_path if os.path.exists(back_path) else None
+    
+    return None
+
+def _get_qr_code_path(cnh_request):
+    """Retorna o path do QR code da CNH baseado na nova estrutura organizada."""
+    if not cnh_request.generated_image_path:
+        return None
+    
+    import os
+    front_path = cnh_request.generated_image_path
+    
+    # Nova estrutura: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/qrcode/ID.png
+    if '/front/' in front_path:
+        qr_path = front_path.replace('/front/', '/qrcode/')
+        return qr_path if os.path.exists(qr_path) else None
+    
+    # Fallback para estrutura antiga (compatibilidade)
+    if 'cnh_front_' in front_path:
+        qr_path = front_path.replace('cnh_front_', 'qr_code_')
+        return qr_path if os.path.exists(qr_path) else None
+    
+    return None
+
+def _check_cnh_back_exists(cnh_request):
+    """Verifica se o arquivo do verso existe."""
+    back_path = _get_cnh_back_path(cnh_request)
+    return bool(back_path)
+
 @cnh_bp.route('/consultar/login', methods=['POST'])
 def consultar_cnh_login():
     """
@@ -1859,18 +1932,20 @@ def consultar_cnh_login():
                 'categorias_adicionais': cnh_autenticada.categorias_adicionais or ''
             },
             
-            # 📁 Arquivos e Imagens (DUAS ESTRATÉGIAS)
+            # 📁 Arquivos e Imagens da CNH (NOVA ESTRUTURA)
             'arquivos': {
-                # 🚀 ESTRATÉGIA 1: URLs diretas (leve, mas depende do Servidor A)
-                'foto_3x4_url': f"/{cnh_autenticada.foto_3x4_path}" if cnh_autenticada.foto_3x4_path else None,
-                'assinatura_url': f"/{cnh_autenticada.assinatura_path}" if cnh_autenticada.assinatura_path else None,
+                # 🎯 PATHS DAS IMAGENS DA CNH (nova estrutura em uploads/cnh/[user_id]/)
+                'cnh_front_path': cnh_autenticada.generated_image_path,
+                'cnh_back_path': _get_cnh_back_path(cnh_autenticada),
+                'qr_code_path': _get_qr_code_path(cnh_autenticada),
                 
-                # ⚠️ ESTRATÉGIA 2: Base64 (pesado, mas independente)
-                # COMENTADO POR PADRÃO - Descomente se Servidor B precisar ser totalmente independente
-                # 'foto_3x4_base64': convert_image_to_base64(cnh_autenticada.foto_3x4_path),
-                # 'assinatura_base64': convert_image_to_base64(cnh_autenticada.assinatura_path),
+                # 📷 Arquivos de upload do usuário
+                'foto_3x4_path': cnh_autenticada.foto_3x4_path,
+                'assinatura_path': cnh_autenticada.assinatura_path,
                 
-                # Informações sobre disponibilidade dos arquivos
+                # ✅ Disponibilidade dos arquivos
+                'cnh_front_disponivel': bool(cnh_autenticada.generated_image_path),
+                'cnh_back_disponivel': _check_cnh_back_exists(cnh_autenticada),
                 'foto_3x4_disponivel': bool(cnh_autenticada.foto_3x4_path),
                 'assinatura_disponivel': bool(cnh_autenticada.assinatura_path)
             },

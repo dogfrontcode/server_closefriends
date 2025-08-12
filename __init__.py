@@ -2,18 +2,28 @@
 import secrets
 import logging
 from flask import Flask, render_template, session, redirect, url_for
-from flask_cors import CORS
-from models import db  # Aqui o Python procura pelo objeto 'db' dentro do pacote models
-from flask_jwt_extended import JWTManager
-from controllers import auth_bp
-from controllers.credits import credits_bp
-from controllers.cnh import cnh_bp
-from controllers.pix_payment import pix_bp  # Importar blueprint PIX
+try:
+    # Tenta imports relativos (quando usado como módulo)
+    from .models import db
+    from .controllers import auth_bp
+    from .controllers.credits import credits_bp
+    from .controllers.cnh import cnh_bp
+    from .controllers.pix_payment import pix_bp
+    from .models.user import User
+    from .models.credit_transaction import CreditTransaction
+    from .models.cnh_request import CNHRequest
+except ImportError:
+    # Fallback para imports absolutos (quando executado diretamente)
+    from models import db
+    from controllers import auth_bp
+    from controllers.credits import credits_bp
+    from controllers.cnh import cnh_bp
+    from controllers.pix_payment import pix_bp
+    from models.user import User
+    from models.credit_transaction import CreditTransaction
+    from models.cnh_request import CNHRequest
 
-# Importar todos os modelos para garantir que sejam registrados
-from models.user import User
-from models.credit_transaction import CreditTransaction
-from models.cnh_request import CNHRequest
+from flask_jwt_extended import JWTManager
 
 # Configurar logging
 logging.basicConfig(
@@ -40,21 +50,6 @@ def create_app():
     app.config['SESSION_COOKIE_MAX_AGE'] = 7200  # 2 horas em segundos (2 * 60 * 60)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Renova a sessão a cada request
 
-    # 🆕 NOVA ARQUITETURA: Configurar CORS para comunicação com Servidor B
-    CORS(app, resources={
-        r"/api/cnh/consultar/*": {
-            "origins": ["*"],  # ⚠️ Em produção, especificar domínios exatos
-            "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
-            "supports_credentials": False
-        },
-        r"/static/uploads/*": {
-            "origins": ["*"],  # Para acesso direto às imagens
-            "methods": ["GET"],
-            "supports_credentials": False
-        }
-    })
-
     db.init_app(app)
     JWTManager(app)
 
@@ -79,7 +74,7 @@ def create_app():
             return redirect(url_for('index'))
         
         # Buscar informações do usuário incluindo créditos
-        from models.user import User
+        # User já foi importado no topo do arquivo
         user = User.query.get(session['user_id'])
         balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
         

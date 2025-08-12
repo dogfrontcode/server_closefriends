@@ -11,6 +11,7 @@ CNH_BACK_COORDINATES = {
     "numero_renach": (100, 50),           # Código RENACH
     "codigo_validacao": (400, 50),        # Código de validação
     "numero_espelho": (100, 80),          # Número do espelho
+    "numero_registro": (30, 300),         # Número da CNH (vertical na lateral esquerda)
     
     # OBSERVAÇÕES E RESTRIÇÕES
     "observacoes": (50, 120),             # Observações gerais
@@ -46,6 +47,7 @@ BACK_FONT_CONFIGS = {
     "numero_renach": {"size": 10, "color": (0, 0, 0), "bold": True},
     "codigo_validacao": {"size": 10, "color": (0, 0, 0), "bold": True},
     "numero_espelho": {"size": 10, "color": (0, 0, 0)},
+    "numero_registro": {"size": 12, "color": (0, 0, 0), "bold": True},  # Número da CNH no verso
     
     # Observações - texto normal
     "observacoes": {"size": 11, "color": (0, 0, 0)},

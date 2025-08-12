@@ -1183,11 +1183,17 @@ def _generate_random_cnh_internal(async_generation=True):
             categoria_habilitacao=dados_aleatorios['categoria_habilitacao'],
             primeira_habilitacao=dados_aleatorios['primeira_habilitacao'],
             nome_mae=dados_aleatorios['nome_mae'],
+            nome_pai=dados_aleatorios.get('nome_pai'),  # Pode ser None
             nacionalidade=dados_aleatorios['nacionalidade'],
             uf_cnh=dados_aleatorios['uf_cnh'],
             local_municipio=dados_aleatorios['local_municipio'],
             local_uf=dados_aleatorios['local_uf'],
-            acc=dados_aleatorios['acc']
+            acc=dados_aleatorios['acc'],
+            # 🆕 CAMPOS DE CONTROLE QUE ESTAVAM FALTANDO
+            numero_registro=dados_aleatorios['numero_registro'],
+            numero_espelho=dados_aleatorios['numero_espelho'],
+            codigo_validacao=dados_aleatorios['codigo_validacao'],
+            numero_renach=dados_aleatorios['numero_renach']
         )
         
         # Salvar no banco

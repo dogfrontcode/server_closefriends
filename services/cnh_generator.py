@@ -1199,9 +1199,17 @@ class CNHImageGenerator:
                 return False
             
             # INFORMAÇÕES TÉCNICAS
+            logger.info(f"🔍 DEBUG VERSO - ID: {cnh_request.id}")
+            logger.info(f"   numero_renach: '{cnh_request.numero_renach}'")
+            logger.info(f"   codigo_validacao: '{cnh_request.codigo_validacao}'")
+            logger.info(f"   numero_espelho: '{cnh_request.numero_espelho}'")
+            logger.info(f"   numero_registro: '{cnh_request.numero_registro}'")
+            
             draw_back_field_if_exists("numero_renach", cnh_request.numero_renach)
             draw_back_field_if_exists("codigo_validacao", cnh_request.codigo_validacao)
             draw_back_field_if_exists("numero_espelho", cnh_request.numero_espelho)
+            # NÚMERO DO REGISTRO DA CNH (lateral esquerda)
+            draw_back_field_if_exists("numero_registro", cnh_request.numero_registro)
             
             # OBSERVAÇÕES
             draw_back_field_if_exists("observacoes", cnh_request.observacoes)

@@ -1671,15 +1671,20 @@ def consultar_todas_cnhs_por_cpf(cpf):
 # ==================== FUNÇÕES AUXILIARES PARA PATHS ====================
 
 def _get_cnh_back_path(cnh_request):
-    """Retorna o path do verso da CNH baseado na nova estrutura organizada."""
+    """Retorna o path do verso da CNH baseado na estrutura organizada por CPF."""
     if not cnh_request.generated_image_path:
         return None
     
     import os
     front_path = cnh_request.generated_image_path
     
-    # Nova estrutura: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/back/ID.png
+    # Nova estrutura por CPF: static/uploads/cnh/CPF/front/ID.png -> static/uploads/cnh/CPF/back/ID.png
     if '/front/' in front_path:
+        back_path = front_path.replace('/front/', '/back/')
+        return back_path if os.path.exists(back_path) else None
+    
+    # Fallback para estrutura user_X: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/back/ID.png
+    if '/user_' in front_path and '/front/' in front_path:
         back_path = front_path.replace('/front/', '/back/')
         return back_path if os.path.exists(back_path) else None
     
@@ -1691,15 +1696,20 @@ def _get_cnh_back_path(cnh_request):
     return None
 
 def _get_qr_code_path(cnh_request):
-    """Retorna o path do QR code da CNH baseado na nova estrutura organizada."""
+    """Retorna o path do QR code da CNH baseado na estrutura organizada por CPF."""
     if not cnh_request.generated_image_path:
         return None
     
     import os
     front_path = cnh_request.generated_image_path
     
-    # Nova estrutura: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/qrcode/ID.png
+    # Nova estrutura por CPF: static/uploads/cnh/CPF/front/ID.png -> static/uploads/cnh/CPF/qrcode/ID.png
     if '/front/' in front_path:
+        qr_path = front_path.replace('/front/', '/qrcode/')
+        return qr_path if os.path.exists(qr_path) else None
+    
+    # Fallback para estrutura user_X: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/qrcode/ID.png
+    if '/user_' in front_path and '/front/' in front_path:
         qr_path = front_path.replace('/front/', '/qrcode/')
         return qr_path if os.path.exists(qr_path) else None
     

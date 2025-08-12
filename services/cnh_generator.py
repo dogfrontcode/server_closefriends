@@ -38,12 +38,12 @@ class CNHImageGenerator:
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.FONTS_DIR, exist_ok=True)
     
-    def _ensure_user_directory(self, user_id, file_type="front"):
+    def _ensure_cnh_directory(self, cnh_request, file_type="front"):
         """
-        Cria diretórios específicos do usuário organizados por tipo.
+        Cria diretórios específicos da CNH organizados por CPF e tipo.
         
         Args:
-            user_id: ID do usuário
+            cnh_request: Objeto CNHRequest
             file_type: Tipo do arquivo (front, back, qrcode)
             
         Returns:
@@ -61,10 +61,13 @@ class CNHImageGenerator:
         
         folder_name = folder_mapping.get(file_type, "front")
         
-        # Criar estrutura: static/uploads/cnh/user_X/tipo/
-        user_dir = os.path.join(self.OUTPUT_DIR, f"user_{user_id}", folder_name)
-        os.makedirs(user_dir, exist_ok=True)
-        return user_dir
+        # Limpar CPF (remover pontos e traços)
+        cpf_limpo = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else f"user_{cnh_request.user_id}"
+        
+        # Criar estrutura: static/uploads/cnh/CPF/tipo/
+        cnh_dir = os.path.join(self.OUTPUT_DIR, cpf_limpo, folder_name)
+        os.makedirs(cnh_dir, exist_ok=True)
+        return cnh_dir
     
     def _load_fonts(self):
         """Carrega fontes para uso na imagem com suporte UTF-8."""
@@ -131,10 +134,10 @@ class CNHImageGenerator:
                 # Garantir que o diretório existe
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
             else:
-                # Criar diretório do usuário e gerar nome único para arquivo
-                user_dir = self._ensure_user_directory(cnh_request.user_id, "cnh_front")
+                # Criar diretório da CNH e gerar nome único para arquivo
+                cnh_dir = self._ensure_cnh_directory(cnh_request, "cnh_front")
                 filename = self._generate_filename(cnh_request, "cnh_front")
-                filepath = os.path.join(user_dir, filename)
+                filepath = os.path.join(cnh_dir, filename)
             
             # Salvar imagem da frente
             image.save(filepath, 'PNG', quality=95)
@@ -1169,7 +1172,7 @@ class CNHImageGenerator:
     
     def get_cnh_paths(self, cnh_request):
         """
-        Gera os paths organizados para todos os tipos de imagem CNH.
+        Gera os paths organizados para todos os tipos de imagem CNH baseados no CPF.
         
         Args:
             cnh_request: Objeto CNHRequest
@@ -1180,18 +1183,21 @@ class CNHImageGenerator:
         # Nome simples: apenas ID.png
         filename = f"{cnh_request.id}.png"
         
+        # Limpar CPF (remover pontos e traços)
+        cpf_limpo = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else f"user_{cnh_request.user_id}"
+        
         # Diretórios específicos por tipo
-        front_dir = self._ensure_user_directory(cnh_request.user_id, "front")
-        back_dir = self._ensure_user_directory(cnh_request.user_id, "back")
-        qrcode_dir = self._ensure_user_directory(cnh_request.user_id, "qrcode")
+        front_dir = self._ensure_cnh_directory(cnh_request, "front")
+        back_dir = self._ensure_cnh_directory(cnh_request, "back")
+        qrcode_dir = self._ensure_cnh_directory(cnh_request, "qrcode")
         
         return {
             "front_path": os.path.join(front_dir, filename),
             "back_path": os.path.join(back_dir, filename),
             "qrcode_path": os.path.join(qrcode_dir, filename),
-            "front_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/front/{filename}",
-            "back_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/back/{filename}",
-            "qrcode_relative": f"static/uploads/cnh/user_{cnh_request.user_id}/qrcode/{filename}"
+            "front_relative": f"static/uploads/cnh/{cpf_limpo}/front/{filename}",
+            "back_relative": f"static/uploads/cnh/{cpf_limpo}/back/{filename}",
+            "qrcode_relative": f"static/uploads/cnh/{cpf_limpo}/qrcode/{filename}"
         }
     
     def generate_thumbnail(self, image_path, max_size=(200, 150)):
@@ -1305,10 +1311,10 @@ class CNHImageGenerator:
                 # Garantir que o diretório existe
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
             else:
-                # Criar diretório do usuário e gerar nome único para arquivo do verso
-                user_dir = self._ensure_user_directory(cnh_request.user_id, "cnh_back")
+                # Criar diretório da CNH e gerar nome único para arquivo do verso
+                cnh_dir = self._ensure_cnh_directory(cnh_request, "cnh_back")
                 filename = self._generate_filename(cnh_request, "cnh_back")
-                filepath = os.path.join(user_dir, filename)
+                filepath = os.path.join(cnh_dir, filename)
             
             # Salvar imagem
             image.save(filepath, 'PNG', quality=95)

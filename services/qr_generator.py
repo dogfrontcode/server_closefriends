@@ -192,10 +192,9 @@ class CNHQRGenerator:
             # Colar QR code no centro
             base_cnh.paste(qr_img, (x_center, y_center))
             
-            # Salvar na pasta qrcode com nome especial
-            filename = f"{cnh_request.id}_centralizado_{estilo}.png"
-            qr_centralizado_path = os.path.join(os.path.dirname(paths.qrcode_path), filename)
-            base_cnh.save(qr_centralizado_path, 'PNG', quality=100)
+            # Salvar na pasta qrcode com nome simples (igual aos outros arquivos)
+            base_cnh.save(paths.qrcode_path, 'PNG', quality=100)
+            qr_centralizado_path = paths.qrcode_path
             
             logger.info(f"QR code centralizado salvo: {qr_centralizado_path}")
             return qr_centralizado_path

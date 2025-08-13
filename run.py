@@ -1,4 +1,9 @@
 # run.py
+import sys
+import os
+
+# Adiciona o diretório atual ao path para permitir importações
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from __init__ import app
 

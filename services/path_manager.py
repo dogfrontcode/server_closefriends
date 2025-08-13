@@ -19,6 +19,7 @@ class CNHPaths:
     """Estrutura para paths de uma CNH com nova organização user_id + cpf."""
     user_folder: str      # pasta do usuário: user_123
     cpf_folder: str       # pasta do CPF: user_123/12345678900
+    uploads_folder: str   # pasta uploads: user_123/12345678900/uploads
     front_path: str       # caminho completo frente
     back_path: str        # caminho completo verso
     qrcode_path: str      # caminho completo qr code
@@ -37,20 +38,23 @@ class CNHPathManager:
     │   ├── 12345678900/    # CPF 1
     │   │   ├── front/
     │   │   ├── back/
-    │   │   └── qrcode/
+    │   │   ├── qrcode/
+    │   │   └── uploads/    # foto 3x4 e assinatura
     │   ├── 98765432100/    # CPF 2 (outro familiar)
     │   │   ├── front/
     │   │   ├── back/
-    │   │   └── qrcode/
+    │   │   ├── qrcode/
+    │   │   └── uploads/
     ├── user_456/
     │   ├── 12345678900/    # Mesmo CPF, usuário diferente
     │   │   ├── front/
     │   │   ├── back/
-    │   │   └── qrcode/
+    │   │   ├── qrcode/
+    │   │   └── uploads/
     """
     
     BASE_DIR = "static/uploads/cnh"
-    ALLOWED_TYPES = ["front", "back", "qrcode"]
+    ALLOWED_TYPES = ["front", "back", "qrcode", "uploads"]
     
     @classmethod
     def get_cpf_clean(cls, cpf: str) -> str:
@@ -102,6 +106,7 @@ class CNHPathManager:
         # Construir hierarquia de pastas
         user_folder = os.path.join(cls.BASE_DIR, user_folder_name)
         cpf_folder = os.path.join(user_folder, cpf_clean)
+        uploads_folder = os.path.join(cpf_folder, "uploads")
         
         # Criar paths absolutos
         front_path = os.path.join(cpf_folder, "front", filename)
@@ -116,6 +121,7 @@ class CNHPathManager:
         return CNHPaths(
             user_folder=user_folder,
             cpf_folder=cpf_folder,
+            uploads_folder=uploads_folder,
             front_path=front_path,
             back_path=back_path,
             qrcode_path=qrcode_path,

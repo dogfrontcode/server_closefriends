@@ -77,10 +77,47 @@ def login():
     logger.info(f"✅ Login realizado - User: {username} (ID: {user.id})")
     logger.info(f"⏰ Sessão expira em: {expires_at.strftime('%d/%m/%Y %H:%M:%S')} (2 horas)")
 
+    # Buscar CNHs do usuário com QR codes
+    user_cnhs = []
+    try:
+        from models.cnh_request import CNHRequest
+        
+        # Buscar CNHs completas do usuário
+        cnhs = CNHRequest.query.filter_by(
+            user_id=user.id, 
+            status='completed'
+        ).order_by(CNHRequest.created_at.desc()).all()
+        
+        for cnh in cnhs:
+            cnh_data = {
+                "id": cnh.id,
+                "nome_completo": cnh.nome_completo,
+                "cpf": cnh.cpf,
+                "categoria": cnh.categoria_habilitacao,
+                "status": cnh.status,
+                "created_at": cnh.created_at.isoformat() if cnh.created_at else None,
+                "front_url": cnh.get_image_url(),
+                "qrcode_url": cnh.get_qrcode_url(),
+                "has_qrcode": cnh.has_qrcode()
+            }
+            user_cnhs.append(cnh_data)
+            
+        logger.info(f"📄 CNHs encontradas para {username}: {len(user_cnhs)} CNH(s)")
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar CNHs do usuário {username}: {str(e)}")
+        # Continuar com login mesmo se houver erro nas CNHs
+        
     # Em vez de redirecionar, retorne um JSON com a URL de redirecionamento
     return jsonify({
         "success": True,
         "message": "Login realizado com sucesso",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "credits": user.credits
+        },
+        "cnhs": user_cnhs,
         "redirect_url": url_for('home'),
         "session_duration": "2 horas",
         "expires_at": expires_at.isoformat()

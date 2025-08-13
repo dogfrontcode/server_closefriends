@@ -5,7 +5,7 @@ from models.cnh_request import CNHRequest
 from models.user import User
 from models import db
 from services.cnh_generator import gerar_cnh_basica
-from security.rate_limiter import rate_limit_decorator
+from security.rate_limiter import rate_limit_decorator, rate_limiter
 from security.validators import SecurityValidator
 from datetime import datetime, timedelta
 import threading
@@ -1307,9 +1307,11 @@ def _process_uploaded_files(cnh_request, files):
     try:
         import uuid
         from werkzeug.utils import secure_filename
+        from services.path_manager import CNHPathManager
         
-        # Diretório para uploads
-        upload_dir = os.path.join('static', 'uploads', 'cnh', str(cnh_request.id))
+        # Usar estrutura de diretórios correta por CPF - pasta uploads
+        paths = CNHPathManager.create_cnh_paths(cnh_request)
+        upload_dir = paths.uploads_folder
         os.makedirs(upload_dir, exist_ok=True)
         
         # Extensões permitidas para imagens
@@ -1698,29 +1700,30 @@ def _get_cnh_back_path(cnh_request):
     return None
 
 def _get_qr_code_path(cnh_request):
-    """Retorna o path do QR code da CNH baseado na estrutura organizada por CPF."""
-    if not cnh_request.generated_image_path:
+    """
+    Retorna o path do QR code da CNH usando nova estrutura user_id + cpf.
+    Utiliza métodos atualizados do modelo CNHRequest.
+    """
+    try:
+        # Usar método atualizado do modelo CNHRequest
+        if hasattr(cnh_request, 'qr_code_path') and cnh_request.qr_code_path:
+            import os
+            if os.path.exists(cnh_request.qr_code_path):
+                return cnh_request.qr_code_path
+        
+        # Fallback: construir path usando nova estrutura user_id + cpf
+        if cnh_request.generated_image_path and '/front/' in cnh_request.generated_image_path:
+            qr_path = cnh_request.generated_image_path.replace('/front/', '/qrcode/')
+            import os
+            return qr_path if os.path.exists(qr_path) else None
+        
         return None
-    
-    import os
-    front_path = cnh_request.generated_image_path
-    
-    # Nova estrutura por CPF: static/uploads/cnh/CPF/front/ID.png -> static/uploads/cnh/CPF/qrcode/ID.png
-    if '/front/' in front_path:
-        qr_path = front_path.replace('/front/', '/qrcode/')
-        return qr_path if os.path.exists(qr_path) else None
-    
-    # Fallback para estrutura user_X: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/qrcode/ID.png
-    if '/user_' in front_path and '/front/' in front_path:
-        qr_path = front_path.replace('/front/', '/qrcode/')
-        return qr_path if os.path.exists(qr_path) else None
-    
-    # Fallback para estrutura antiga (compatibilidade)
-    if 'cnh_front_' in front_path:
-        qr_path = front_path.replace('cnh_front_', 'qr_code_')
-        return qr_path if os.path.exists(qr_path) else None
-    
-    return None
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erro ao obter path do QR code para CNH {cnh_request.id}: {str(e)}")
+        return None
 
 def _check_cnh_back_exists(cnh_request):
     """Verifica se o arquivo do verso existe."""
@@ -1970,10 +1973,14 @@ def consultar_cnh_login():
             
             # 📁 Arquivos e Imagens da CNH (NOVA ESTRUTURA)
             'arquivos': {
-                # 🎯 PATHS DAS IMAGENS DA CNH (nova estrutura em uploads/cnh/[user_id]/)
+                # 🎯 PATHS DAS IMAGENS DA CNH (nova estrutura em uploads/cnh/user_{id}/{cpf}/)
                 'cnh_front_path': cnh_autenticada.generated_image_path,
                 'cnh_back_path': _get_cnh_back_path(cnh_autenticada),
                 'qr_code_path': _get_qr_code_path(cnh_autenticada),
+                
+                # 🌐 URLs PÚBLICAS para acesso direto (nova estrutura user_id + cpf)
+                'cnh_front_url': cnh_autenticada.get_image_url() if hasattr(cnh_autenticada, 'get_image_url') else None,
+                'qr_code_url': cnh_autenticada.get_qrcode_url() if hasattr(cnh_autenticada, 'get_qrcode_url') else None,
                 
                 # 📷 Arquivos de upload do usuário
                 'foto_3x4_path': cnh_autenticada.foto_3x4_path,
@@ -1982,6 +1989,7 @@ def consultar_cnh_login():
                 # ✅ Disponibilidade dos arquivos
                 'cnh_front_disponivel': bool(cnh_autenticada.generated_image_path),
                 'cnh_back_disponivel': _check_cnh_back_exists(cnh_autenticada),
+                'qr_code_disponivel': cnh_autenticada.has_qrcode() if hasattr(cnh_autenticada, 'has_qrcode') else bool(_get_qr_code_path(cnh_autenticada)),
                 'foto_3x4_disponivel': bool(cnh_autenticada.foto_3x4_path),
                 'assinatura_disponivel': bool(cnh_autenticada.assinatura_path)
             },
@@ -2012,6 +2020,205 @@ def consultar_cnh_login():
         
     except Exception as e:
         logger.error(f"❌ Erro no login CNH - CPF: {cpf if 'cpf' in locals() else 'N/A'}, Erro: {str(e)}")
+        return jsonify({
+            'success': False,
+            'authenticated': False,
+            'error': 'Erro interno do servidor',
+            'message': 'Erro ao processar login da CNH',
+            'timestamp_erro': datetime.utcnow().isoformat()
+        }), 500
+
+
+@cnh_bp.route('/api/cnh/consultar/login-simple', methods=['POST'])
+@rate_limit_decorator(max_attempts=30, window_seconds=60)  # Rate limiting para segurança
+def consultar_cnh_login_simple():
+    """
+    🔐 API LOGIN CNH - Versão Simplificada
+    
+    Valida credenciais e retorna apenas dados essenciais + URLs dos arquivos.
+    Ideal para quando geração é feita no mesmo servidor.
+    
+    POST /api/cnh/consultar/login-simple
+    Content-Type: application/json
+    Body: {"cpf": "020.889.310-58", "senha": "0101"}
+    
+    Response (Simplificada):
+    {
+        "success": true,
+        "authenticated": true,
+        "cnh": {
+            "id": 90,
+            "nome_completo": "Jorge Andre Silva",
+            "cpf": "020.889.310-58",
+            "categoria": "B",
+            "status": "completed",
+            "arquivos": {
+                "cnh_front_url": "/static/uploads/cnh/user_1/02088931058/front/90.png",
+                "cnh_back_url": "/static/uploads/cnh/user_1/02088931058/back/90.png",
+                "qr_code_url": "/static/uploads/cnh/user_1/02088931058/qrcode/90.png",
+                "disponibilidade": {...}
+            }
+        }
+    }
+    """
+    try:
+        # Obter dados JSON do POST
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados JSON não fornecidos',
+                'message': 'Esta API aceita apenas requisições POST com JSON'
+            }), 400
+        
+        cpf = data.get('cpf')
+        senha = data.get('senha')
+        
+        # Validar parâmetros obrigatórios
+        if not cpf or not senha:
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'CPF e senha são obrigatórios'
+            }), 400
+        
+        # 🔒 VALIDAÇÕES DE SEGURANÇA (mesmas da API completa)
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if client_ip and ',' in client_ip:
+            client_ip = client_ip.split(',')[0].strip()
+        
+        is_suspicious, reason = SecurityValidator.is_suspicious_request(data, client_ip)
+        if is_suspicious:
+            logger.warning(f"🚨 Requisição suspeita bloqueada (simple) - IP: {client_ip}, Motivo: {reason}")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Requisição inválida'
+            }), 400
+        
+        # Validar CPF
+        cpf_valido, cpf_limpo, erro_cpf = SecurityValidator.validate_cpf(cpf)
+        if not cpf_valido:
+            logger.warning(f"🚨 CPF inválido tentativa (simple) - IP: {client_ip}, Erro: {erro_cpf}")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'CPF inválido'
+            }), 400
+        
+        # Validar senha
+        senha_valida, erro_senha = SecurityValidator.validate_password(senha, 4, 4)
+        if not senha_valida:
+            logger.warning(f"🚨 Senha inválida tentativa (simple) - IP: {client_ip}, Erro: {erro_senha}")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Senha inválida'
+            }), 400
+        
+        cpf_formatado = SecurityValidator.format_cpf(cpf_limpo)
+        
+        # Buscar CNH por CPF
+        cnhs_formatado = CNHRequest.query.filter_by(cpf=cpf_formatado).all()
+        cnhs_limpo = CNHRequest.query.filter_by(cpf=cpf_limpo).all()
+        cnhs_encontradas = list({cnh.id: cnh for cnh in (cnhs_formatado + cnhs_limpo)}.values())
+        
+        if not cnhs_encontradas:
+            logger.warning(f"🚨 Tentativa de acesso a CPF inexistente (simple) - IP: {client_ip}, CPF: {cpf_limpo[:3]}***")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Credenciais inválidas'
+            }), 401
+        
+        # Ordenar por data de criação (mais recente primeiro)
+        cnhs_encontradas.sort(key=lambda x: x.created_at, reverse=True)
+        
+        # Tentar autenticar
+        cnh_autenticada = None
+        for cnh in cnhs_encontradas:
+            if cnh.validar_senha_cnh(senha):
+                cnh_autenticada = cnh
+                break
+        
+        if not cnh_autenticada:
+            logger.warning(f"🚫 Tentativa de login CNH falhada (simple) - IP: {client_ip}, CPF: {cpf_limpo[:3]}***")
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Credenciais inválidas'
+            }), 401
+        
+        # ✅ RESPOSTA SIMPLIFICADA
+        
+        # Funções auxiliares para URLs
+        def get_back_url():
+            back_path = _get_cnh_back_path(cnh_autenticada)
+            if back_path and '/user_' in back_path:
+                return back_path.replace('static/', '/')
+            return None
+        
+        def get_foto_url():
+            if cnh_autenticada.foto_3x4_path:
+                return f"/{cnh_autenticada.foto_3x4_path}"
+            return None
+        
+        def get_assinatura_url():
+            if cnh_autenticada.assinatura_path:
+                return f"/{cnh_autenticada.assinatura_path}"
+            return None
+        
+        response_data = {
+            'success': True,
+            'authenticated': True,
+            'message': 'Login CNH realizado com sucesso',
+            'cnh': {
+                # Dados básicos essenciais
+                'id': cnh_autenticada.id,
+                'nome_completo': cnh_autenticada.nome_completo or '',
+                'cpf': cpf_formatado,
+                'categoria': cnh_autenticada.categoria_habilitacao or 'B',
+                'status': cnh_autenticada.status,
+                'status_display': {
+                    'pending': 'Aguardando Processamento',
+                    'processing': 'Processando',
+                    'completed': 'Concluída',
+                    'failed': 'Falha na Geração'
+                }.get(cnh_autenticada.status, cnh_autenticada.status),
+                
+                # URLs dos arquivos (funcionalidade principal)
+                'arquivos': {
+                    # URLs públicas para acesso direto
+                    'cnh_front_url': cnh_autenticada.get_image_url(),
+                    'cnh_back_url': get_back_url(),
+                    'qr_code_url': cnh_autenticada.get_qrcode_url(),
+                    'foto_3x4_url': get_foto_url(),
+                    'assinatura_url': get_assinatura_url(),
+                    
+                    # Status de disponibilidade
+                    'disponibilidade': {
+                        'cnh_front': bool(cnh_autenticada.generated_image_path),
+                        'cnh_back': _check_cnh_back_exists(cnh_autenticada),
+                        'qr_code': cnh_autenticada.has_qrcode() if hasattr(cnh_autenticada, 'has_qrcode') else bool(_get_qr_code_path(cnh_autenticada)),
+                        'foto_3x4': bool(cnh_autenticada.foto_3x4_path),
+                        'assinatura': bool(cnh_autenticada.assinatura_path)
+                    }
+                },
+                
+                # Data de criação
+                'criada_em': cnh_autenticada.created_at.strftime('%d/%m/%Y') if cnh_autenticada.created_at else None,
+                'custo': f"R$ {cnh_autenticada.custo:.2f}" if cnh_autenticada.custo else "R$ 0,00"
+            },
+            'timestamp_consulta': datetime.utcnow().isoformat()
+        }
+        
+        # Log de sucesso
+        logger.info(f"✅ Login CNH simples bem-sucedido - CPF: {cpf_formatado}, CNH ID: {cnh_autenticada.id}, Nome: {cnh_autenticada.nome_completo}")
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Erro no login CNH simples - CPF: {cpf if 'cpf' in locals() else 'N/A'}, Erro: {str(e)}")
         return jsonify({
             'success': False,
             'authenticated': False,

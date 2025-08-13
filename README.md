@@ -138,7 +138,8 @@ onlymonkeys/
 ├── 
 ├── static/                    # Arquivos estáticos
 │   ├── fonts/                # Fontes
-│   └── generated_cnhs/       # CNH geradas
+│   ├── uploads/              # CNHs organizadas por usuário/CPF
+│   └── cnh_matriz/           # Templates da CNH
 ├── 
 ├── instance/                  # Banco de dados
 │   └── app.db                # SQLite database

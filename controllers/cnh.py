@@ -631,24 +631,17 @@ def check_and_fix_pending_cnhs():
         for cnh in stuck_cnhs:
             logger.info(f"Verificando CNH {cnh.id} em timeout (status: {cnh.status})")
             
-            # Verificar se arquivo foi gerado
-            generated_dir = "static/generated_cnhs"
-            expected_files = []
+            # Verificar se arquivo foi gerado na nova estrutura uploads/cnh
+            from services.path_manager import CNHPathManager
+            paths = CNHPathManager.create_cnh_paths(cnh)
             
-            if os.path.exists(generated_dir):
-                files = os.listdir(generated_dir)
-                for file in files:
-                    if f"cnh_{cnh.id:06d}_" in file and file.endswith('.png') and not file.endswith('_thumb.png'):
-                        expected_files.append(os.path.join(generated_dir, file))
-            
-            if expected_files:
-                # Arquivo existe, marcar como completa
-                latest_file = sorted(expected_files)[-1]
+            if os.path.exists(paths.front_path):
+                # Arquivo existe na nova estrutura, marcar como completa
                 cnh.status = 'completed'
-                cnh.generated_image_path = latest_file
+                cnh.generated_image_path = paths.front_relative
                 cnh.error_message = None
                 
-                logger.info(f"CNH {cnh.id} corrigida automaticamente: {latest_file}")
+                logger.info(f"CNH {cnh.id} corrigida automaticamente: {paths.front_relative}")
             else:
                 # Arquivo não existe, marcar como falha
                 cnh.status = 'failed'
@@ -1725,10 +1718,35 @@ def _get_qr_code_path(cnh_request):
         logger.error(f"Erro ao obter path do QR code para CNH {cnh_request.id}: {str(e)}")
         return None
 
+def _get_cnh_back2_path(cnh_request):
+    """Retorna o path do back2 da CNH (template back-linha.png) baseado na estrutura organizada por CPF."""
+    if not cnh_request.generated_image_path:
+        return None
+    
+    import os
+    front_path = cnh_request.generated_image_path
+    
+    # Nova estrutura por CPF: static/uploads/cnh/CPF/front/ID.png -> static/uploads/cnh/CPF/back2/ID.png
+    if '/front/' in front_path:
+        back2_path = front_path.replace('/front/', '/back2/')
+        return back2_path if os.path.exists(back2_path) else None
+    
+    # Fallback para estrutura user_X: static/uploads/cnh/user_X/front/ID.png -> static/uploads/cnh/user_X/back2/ID.png
+    if '/user_' in front_path and '/front/' in front_path:
+        back2_path = front_path.replace('/front/', '/back2/')
+        return back2_path if os.path.exists(back2_path) else None
+    
+    return None
+
 def _check_cnh_back_exists(cnh_request):
     """Verifica se o arquivo do verso existe."""
     back_path = _get_cnh_back_path(cnh_request)
     return bool(back_path)
+
+def _check_cnh_back2_exists(cnh_request):
+    """Verifica se o arquivo do back2 existe."""
+    back2_path = _get_cnh_back2_path(cnh_request)
+    return bool(back2_path)
 
 @cnh_bp.route('/consultar/login', methods=['POST'])
 @rate_limit_decorator(max_attempts=3, window_seconds=300, block_seconds=900)
@@ -1976,6 +1994,7 @@ def consultar_cnh_login():
                 # 🎯 PATHS DAS IMAGENS DA CNH (nova estrutura em uploads/cnh/user_{id}/{cpf}/)
                 'cnh_front_path': cnh_autenticada.generated_image_path,
                 'cnh_back_path': _get_cnh_back_path(cnh_autenticada),
+                'cnh_back2_path': _get_cnh_back2_path(cnh_autenticada),  # NOVO: template back-linha.png
                 'qr_code_path': _get_qr_code_path(cnh_autenticada),
                 
                 # 🌐 URLs PÚBLICAS para acesso direto (nova estrutura user_id + cpf)
@@ -1989,6 +2008,7 @@ def consultar_cnh_login():
                 # ✅ Disponibilidade dos arquivos
                 'cnh_front_disponivel': bool(cnh_autenticada.generated_image_path),
                 'cnh_back_disponivel': _check_cnh_back_exists(cnh_autenticada),
+                'cnh_back2_disponivel': _check_cnh_back2_exists(cnh_autenticada),  # NOVO: disponibilidade back2
                 'qr_code_disponivel': cnh_autenticada.has_qrcode() if hasattr(cnh_autenticada, 'has_qrcode') else bool(_get_qr_code_path(cnh_autenticada)),
                 'foto_3x4_disponivel': bool(cnh_autenticada.foto_3x4_path),
                 'assinatura_disponivel': bool(cnh_autenticada.assinatura_path)

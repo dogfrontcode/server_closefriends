@@ -1171,9 +1171,11 @@ class CNHImageGenerator:
         return {
             "front_path": paths.front_path,
             "back_path": paths.back_path,
+            "back2_path": paths.back2_path,
             "qrcode_path": paths.qrcode_path,
             "front_relative": paths.front_relative,
             "back_relative": paths.back_relative,
+            "back2_relative": paths.back2_relative,
             "qrcode_relative": paths.qrcode_relative
         }
     
@@ -1420,14 +1422,62 @@ class CNHImageGenerator:
         except Exception as e:
             logger.error(f"Erro ao gerar códigos de segurança: {str(e)}")
     
+    def generate_back2_cnh(self, cnh_request, output_path=None):
+        """
+        Gera o BACK2 da CNH usando a imagem back-linha.png como template.
+        
+        Args:
+            cnh_request: Objeto CNHRequest com dados
+            output_path: Caminho específico para salvar (opcional)
+            
+        Returns:
+            str: Caminho do arquivo gerado
+        """
+        try:
+            logger.info(f"Iniciando geração do BACK2 da CNH - ID: {cnh_request.id}")
+            
+            # Carregar template back-linha.png
+            template_path = os.path.join(os.path.dirname(__file__), '..', "static/cnh_matriz/back-linha.png")
+            if not os.path.exists(template_path):
+                logger.warning(f"Template back-linha.png não encontrado: {template_path}. Usando imagem em branco.")
+                image = Image.new('RGB', (self.IMAGE_WIDTH, self.IMAGE_HEIGHT), (255, 255, 255))
+            else:
+                image = Image.open(template_path).copy()
+            
+            draw = ImageDraw.Draw(image)
+            
+            # Aplicar dados usando as mesmas coordenadas do verso (back_coordinates.py)
+            self._apply_back_data_with_coordinates(draw, cnh_request)
+            
+            # Usar path específico ou gerar automaticamente
+            if output_path:
+                filepath = output_path
+                # Garantir que o diretório existe
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            else:
+                # Usar CNHPathManager para estrutura correta (pasta back2)
+                from services.path_manager import CNHPathManager
+                paths = CNHPathManager.create_cnh_paths(cnh_request)
+                CNHPathManager.ensure_directories(paths)
+                filepath = paths.back2_path
+            
+            # Salvar imagem
+            image.save(filepath, 'PNG', quality=95)
+            
+            logger.info(f"Back2 da CNH gerado com sucesso - Arquivo: {filepath}")
+            return filepath
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar back2 da CNH - ID: {cnh_request.id}, Erro: {str(e)}")
+            raise e
 
     
     def generate_complete_cnh(self, cnh_request):
         """
-        Gera CNH COMPLETA (frente + verso).
+        Gera CNH COMPLETA (frente + verso + back2).
         
         Returns:
-            tuple: (front_path: str, back_path: str)
+            tuple: (front_path: str, back_path: str, back2_path: str)
         """
         try:
             logger.info(f"Iniciando geração COMPLETA da CNH - ID: {cnh_request.id}")
@@ -1438,8 +1488,11 @@ class CNHImageGenerator:
             # Gerar verso 
             back_path = self.generate_back_cnh(cnh_request)
             
-            logger.info(f"CNH completa gerada - Frente: {front_path}, Verso: {back_path}")
-            return front_path, back_path
+            # Gerar back2 (com template back-linha.png)
+            back2_path = self.generate_back2_cnh(cnh_request)
+            
+            logger.info(f"CNH completa gerada - Frente: {front_path}, Verso: {back_path}, Back2: {back2_path}")
+            return front_path, back_path, back2_path
             
         except Exception as e:
             logger.error(f"Erro ao gerar CNH completa - ID: {cnh_request.id}, Erro: {str(e)}")
@@ -1480,14 +1533,19 @@ def gerar_cnh_basica(cnh_request):
         logger.info(f"📑 Gerando VERSO da CNH...")
         back_path = generator.generate_back_cnh(cnh_request, paths["back_path"])
         
+        # ===== ETAPA 2.5: GERAR BACK2 =====
+        logger.info(f"📑 Gerando BACK2 da CNH (com back-linha.png)...")
+        back2_path = generator.generate_back2_cnh(cnh_request, paths["back2_path"])
+        
         # ===== ETAPA 3: GERAR QR CODE =====
         logger.info(f"🔲 Gerando QR CODE...")
         try:
             # URL base (adaptar conforme necessário)
             base_url = "https://localhost:5001"  # ⚠️ AJUSTAR PARA PRODUÇÃO
             
-            # Gerar QR code que aponta para a imagem da frente
-            success_qr, qr_path, qr_error = gerar_qr_para_cnh(cnh_request, base_url, "cnh_url")
+            # Gerar QR code centralizado que aponta para a imagem da frente (usando estilo premium)
+            from .qr_generator import gerar_qr_centralizado_para_cnh
+            success_qr, qr_path, qr_error = gerar_qr_centralizado_para_cnh(cnh_request, base_url, "premium", 440)
             
             if success_qr:
                 # Salvar dados do QR code no modelo usando nova estrutura
@@ -1516,14 +1574,21 @@ def gerar_cnh_basica(cnh_request):
             error_msg = "Imagem do verso é inválida"
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
+            
+        if not generator.validate_image(back2_path):
+            error_msg = "Imagem do back2 é inválida"
+            cnh_request.marcar_como_falha(error_msg)
+            return False, None, error_msg
         
         # ===== ETAPA 5: PREPARAR RESULTADO =====
         result_paths = {
             "front_path": front_path,
             "back_path": back_path,
+            "back2_path": back2_path,
             "qrcode_path": qr_path if 'qr_path' in locals() and qr_path else None,
             "front_relative": paths["front_relative"],
             "back_relative": paths["back_relative"],
+            "back2_relative": paths["back2_relative"],
             "qrcode_relative": paths["qrcode_relative"] if 'qr_path' in locals() and qr_path else None
         }
         
@@ -1534,6 +1599,7 @@ def gerar_cnh_basica(cnh_request):
         logger.info(f"🎉 CNH COMPLETA gerada com sucesso - ID: {cnh_request.id}")
         logger.info(f"   📄 Frente: {front_path}")
         logger.info(f"   📑 Verso: {back_path}")
+        logger.info(f"   📑 Back2: {back2_path}")
         if 'qr_path' in locals() and qr_path:
             logger.info(f"   🔲 QR Code: {qr_path}")
         logger.info(f"   💾 Status: {cnh_request.status}")
@@ -1564,9 +1630,9 @@ def gerar_cnh_completa(cnh_request):
         cnh_request.marcar_como_processando()
         
         # Gerar CNH completa
-        front_path, back_path = generator.generate_complete_cnh(cnh_request)
+        front_path, back_path, back2_path = generator.generate_complete_cnh(cnh_request)
         
-        # Validar ambas as imagens
+        # Validar todas as imagens
         if not generator.validate_image(front_path):
             error_msg = "Imagem da frente inválida"
             cnh_request.marcar_como_falha(error_msg)
@@ -1576,13 +1642,19 @@ def gerar_cnh_completa(cnh_request):
             error_msg = "Imagem do verso inválida"
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
+            
+        if not generator.validate_image(back2_path):
+            error_msg = "Imagem do back2 inválida"
+            cnh_request.marcar_como_falha(error_msg)
+            return False, None, error_msg
         
         # Marcar como completa
         cnh_request.marcar_como_completa(front_path)
         
         paths = {
             "front": front_path,
-            "back": back_path
+            "back": back_path,
+            "back2": back2_path
         }
         
         logger.info(f"CNH completa gerada com sucesso - ID: {cnh_request.id}")

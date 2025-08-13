@@ -83,4 +83,4 @@ ASSINATURA_AREA = {
 
 # Caminhos dos arquivos
 TEMPLATE_PATH = "static/cnh_matriz/front-cnh.png"
-OUTPUT_DIR = "static/generated_cnhs"
+# OUTPUT_DIR removido - agora usa CNHPathManager para estrutura organizada

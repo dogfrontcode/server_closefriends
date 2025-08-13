@@ -50,21 +50,6 @@ class CNHImageGenerator:
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.FONTS_DIR, exist_ok=True)
     
-    def _ensure_cnh_directory(self, cnh_request, file_type="front"):
-        """
-        DEPRECATED: Use CNHPathManager.create_cnh_paths() instead.
-        Mantido para compatibilidade temporária.
-        """
-        logger.warning("_ensure_cnh_directory é deprecated. Use CNHPathManager.create_cnh_paths()")
-        
-        # Fallback para compatibilidade
-        folder_mapping = {"cnh_front": "front", "cnh_back": "back", "qr_code": "qrcode", "front": "front", "back": "back", "qrcode": "qrcode"}
-        folder_name = folder_mapping.get(file_type, "front")
-        cpf_limpo = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else f"user_{cnh_request.user_id}"
-        cnh_dir = os.path.join(self.OUTPUT_DIR, cpf_limpo, folder_name)
-        os.makedirs(cnh_dir, exist_ok=True)
-        return cnh_dir
-    
     def _load_fonts(self):
         """Carrega fontes para uso na imagem com suporte UTF-8."""
         try:
@@ -130,10 +115,11 @@ class CNHImageGenerator:
                 # Garantir que o diretório existe
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
             else:
-                # Criar diretório da CNH e gerar nome único para arquivo
-                cnh_dir = self._ensure_cnh_directory(cnh_request, "cnh_front")
-                filename = self._generate_filename(cnh_request, "cnh_front")
-                filepath = os.path.join(cnh_dir, filename)
+                # Usar CNHPathManager para estrutura correta
+                from services.path_manager import CNHPathManager
+                paths = CNHPathManager.create_cnh_paths(cnh_request)
+                CNHPathManager.ensure_directories(paths)
+                filepath = paths.front_path
             
             # Salvar imagem da frente
             image.save(filepath, 'PNG', quality=95)
@@ -1302,10 +1288,11 @@ class CNHImageGenerator:
                 # Garantir que o diretório existe
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
             else:
-                # Criar diretório da CNH e gerar nome único para arquivo do verso
-                cnh_dir = self._ensure_cnh_directory(cnh_request, "cnh_back")
-                filename = self._generate_filename(cnh_request, "cnh_back")
-                filepath = os.path.join(cnh_dir, filename)
+                # Usar CNHPathManager para estrutura correta
+                from services.path_manager import CNHPathManager
+                paths = CNHPathManager.create_cnh_paths(cnh_request)
+                CNHPathManager.ensure_directories(paths)
+                filepath = paths.back_path
             
             # Salvar imagem
             image.save(filepath, 'PNG', quality=95)

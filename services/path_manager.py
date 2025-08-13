@@ -203,3 +203,4 @@ class CNHPathManager:
             return old_path.replace('cnh_front_', 'cnh_back_')
         
         return None
+

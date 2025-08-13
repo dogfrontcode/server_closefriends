@@ -68,6 +68,10 @@ class CNHRequest(db.Model):
     # 🆕 NOVA ARQUITETURA: Senha para acesso à CNH no Servidor B
     cnh_password = db.Column(db.String(4))  # 4 dígitos: DDMM da data de nascimento
     
+    # 🔲 QR CODE: Campos para QR code
+    qr_code_url = db.Column(db.String(500))  # URL que o QR code aponta
+    qr_code_path = db.Column(db.String(255))  # Caminho da imagem QR code
+    
     # Controle do processo
     status = db.Column(db.String(20), default='pending', nullable=False)
     # Status possíveis: 'pending', 'processing', 'completed', 'failed'
@@ -558,6 +562,11 @@ class CNHRequest(db.Model):
             'generated_image_path': self.generated_image_path,
             'image_url': self.get_image_url(),
             'can_download': self.can_download(),
+            # 🔲 QR CODE: Dados do QR code
+            'qr_code_url': self.qr_code_url,
+            'qr_code_path': self.qr_code_path,
+            'qrcode_url': self.get_qrcode_url(),
+            'has_qrcode': self.has_qrcode(),
             'error_message': self.error_message,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None
@@ -650,3 +659,53 @@ class CNHRequest(db.Model):
         logger.info(f"  Espelho: {self.numero_espelho}")
         logger.info(f"  Validação: {self.codigo_validacao}")
         logger.info(f"  RENACH: {self.numero_renach}")
+
+    # ==================== MÉTODOS PARA QR CODE ====================
+    
+    def get_qrcode_url(self):
+        """
+        Retorna URL pública do QR code.
+        
+        Returns:
+            str: URL do QR code ou None se não existir
+        """
+        if not self.qr_code_path:
+            return None
+        
+        # Limpar CPF para usar na URL
+        cpf_limpo = ''.join(filter(str.isdigit, self.cpf)) if self.cpf else f"user_{self.user_id}"
+        return f'/static/uploads/cnh/{cpf_limpo}/qrcode/{self.id}.png'
+    
+    def get_qrcode_filename(self):
+        """
+        Retorna nome do arquivo QR code.
+        
+        Returns:
+            str: Nome do arquivo QR code
+        """
+        if not self.qr_code_path:
+            return None
+        
+        return os.path.basename(self.qr_code_path)
+    
+    def has_qrcode(self):
+        """
+        Verifica se CNH possui QR code gerado.
+        
+        Returns:
+            bool: True se QR code existe
+        """
+        return (self.qr_code_path and 
+                os.path.exists(self.qr_code_path))
+    
+    def set_qrcode_data(self, qr_path, qr_url):
+        """
+        Define dados do QR code após geração.
+        
+        Args:
+            qr_path: Caminho da imagem QR code
+            qr_url: URL que o QR code aponta
+        """
+        self.qr_code_path = qr_path
+        self.qr_code_url = qr_url
+        logger.info(f"QR code definido para CNH {self.id}: {qr_path} -> {qr_url}")

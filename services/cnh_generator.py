@@ -1467,7 +1467,7 @@ class CNHImageGenerator:
 
 def gerar_cnh_basica(cnh_request):
     """
-    Função principal para gerar CNH básica com estrutura organizada.
+    Função principal para gerar CNH básica com estrutura organizada + QR code.
     
     Args:
         cnh_request: Objeto CNHRequest
@@ -1477,7 +1477,12 @@ def gerar_cnh_basica(cnh_request):
         paths_dict contém: front_path, back_path, qrcode_path (relativos)
     """
     try:
+        from .qr_generator import CNHQRGenerator, gerar_qr_para_cnh
+        
         generator = CNHImageGenerator()
+        qr_generator = CNHQRGenerator()
+        
+        logger.info(f"🚀 INICIANDO GERAÇÃO COMPLETA CNH + QR CODE - ID: {cnh_request.id}")
         
         # Marcar como processando
         cnh_request.marcar_como_processando()
@@ -1485,11 +1490,40 @@ def gerar_cnh_basica(cnh_request):
         # Obter paths organizados
         paths = generator.get_cnh_paths(cnh_request)
         
-        # Gerar frente e verso usando paths específicos
+        # ===== ETAPA 1: GERAR FRENTE =====
+        logger.info(f"📄 Gerando FRENTE da CNH...")
         front_path = generator.generate_basic_cnh(cnh_request, paths["front_path"])
+        
+        # ===== ETAPA 2: GERAR VERSO =====
+        logger.info(f"📑 Gerando VERSO da CNH...")
         back_path = generator.generate_back_cnh(cnh_request, paths["back_path"])
         
-        # Validar imagens geradas
+        # ===== ETAPA 3: GERAR QR CODE =====
+        logger.info(f"🔲 Gerando QR CODE...")
+        try:
+            # URL base (adaptar conforme necessário)
+            base_url = "https://localhost:5001"  # ⚠️ AJUSTAR PARA PRODUÇÃO
+            
+            # Gerar QR code que aponta para a imagem da frente
+            success_qr, qr_path, qr_error = gerar_qr_para_cnh(cnh_request, base_url, "cnh_url")
+            
+            if success_qr:
+                # Salvar dados do QR code no modelo
+                cpf_clean = paths["front_relative"].split('/')[3]  # Extrair CPF do path
+                qr_url = f"{base_url}/static/uploads/cnh/{cpf_clean}/front/{cnh_request.id}.png"
+                cnh_request.set_qrcode_data(qr_path, qr_url)
+                logger.info(f"✅ QR CODE gerado com sucesso: {qr_path}")
+            else:
+                logger.warning(f"⚠️ Falha ao gerar QR code: {qr_error}")
+                # Continuar sem QR code - não é crítico
+                
+        except Exception as qr_e:
+            logger.warning(f"⚠️ Erro na geração de QR code (não crítico): {str(qr_e)}")
+            # Continuar sem QR code
+        
+        # ===== ETAPA 4: VALIDAR IMAGENS =====
+        logger.info(f"✅ Validando imagens geradas...")
+        
         if not generator.validate_image(front_path):
             error_msg = "Imagem da frente é inválida"
             cnh_request.marcar_como_falha(error_msg)
@@ -1500,29 +1534,34 @@ def gerar_cnh_basica(cnh_request):
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
         
-        # Preparar paths relativos para retorno
+        # ===== ETAPA 5: PREPARAR RESULTADO =====
         result_paths = {
             "front_path": front_path,
             "back_path": back_path,
-            "qrcode_path": paths["qrcode_path"],
+            "qrcode_path": qr_path if 'qr_path' in locals() and qr_path else None,
             "front_relative": paths["front_relative"],
             "back_relative": paths["back_relative"],
-            "qrcode_relative": paths["qrcode_relative"]
+            "qrcode_relative": paths["qrcode_relative"] if 'qr_path' in locals() and qr_path else None
         }
         
         # Marcar como completa com path da frente (compatibilidade)
         cnh_request.marcar_como_completa(front_path)
         
-        logger.info(f"CNH gerada com sucesso - ID: {cnh_request.id}")
-        logger.info(f"  Frente: {front_path}")
-        logger.info(f"  Verso: {back_path}")
+        # ===== DEBUG LOG FINAL =====
+        logger.info(f"🎉 CNH COMPLETA gerada com sucesso - ID: {cnh_request.id}")
+        logger.info(f"   📄 Frente: {front_path}")
+        logger.info(f"   📑 Verso: {back_path}")
+        if 'qr_path' in locals() and qr_path:
+            logger.info(f"   🔲 QR Code: {qr_path}")
+        logger.info(f"   💾 Status: {cnh_request.status}")
+        logger.info(f"   🔗 QR URL: {cnh_request.qr_code_url}")
         
         return True, result_paths, ""
         
     except Exception as e:
         error_msg = f"Erro na geração: {str(e)}"
         cnh_request.marcar_como_falha(error_msg)
-        logger.error(f"Erro ao gerar CNH - ID: {cnh_request.id}, Erro: {error_msg}")
+        logger.error(f"❌ Erro ao gerar CNH - ID: {cnh_request.id}, Erro: {error_msg}")
         return False, None, error_msg
 
 def gerar_cnh_completa(cnh_request):

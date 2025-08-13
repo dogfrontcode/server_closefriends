@@ -1168,7 +1168,7 @@ class CNHImageGenerator:
     
     def get_cnh_paths(self, cnh_request):
         """
-        Gera os paths organizados para todos os tipos de imagem CNH baseados no CPF.
+        Gera os paths organizados usando nova estrutura user_id + cpf.
         
         Args:
             cnh_request: Objeto CNHRequest
@@ -1176,24 +1176,19 @@ class CNHImageGenerator:
         Returns:
             dict: Dicionário com paths da frente, verso e QR code
         """
-        # Nome simples: apenas ID.png
-        filename = f"{cnh_request.id}.png"
+        from .path_manager import CNHPathManager
         
-        # Limpar CPF (remover pontos e traços)
-        cpf_limpo = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else f"user_{cnh_request.user_id}"
-        
-        # Diretórios específicos por tipo
-        front_dir = self._ensure_cnh_directory(cnh_request, "front")
-        back_dir = self._ensure_cnh_directory(cnh_request, "back")
-        qrcode_dir = self._ensure_cnh_directory(cnh_request, "qrcode")
+        # Usar CNHPathManager para criar paths com nova estrutura
+        paths = CNHPathManager.create_cnh_paths(cnh_request)
+        CNHPathManager.ensure_directories(paths)
         
         return {
-            "front_path": os.path.join(front_dir, filename),
-            "back_path": os.path.join(back_dir, filename),
-            "qrcode_path": os.path.join(qrcode_dir, filename),
-            "front_relative": f"static/uploads/cnh/{cpf_limpo}/front/{filename}",
-            "back_relative": f"static/uploads/cnh/{cpf_limpo}/back/{filename}",
-            "qrcode_relative": f"static/uploads/cnh/{cpf_limpo}/qrcode/{filename}"
+            "front_path": paths.front_path,
+            "back_path": paths.back_path,
+            "qrcode_path": paths.qrcode_path,
+            "front_relative": paths.front_relative,
+            "back_relative": paths.back_relative,
+            "qrcode_relative": paths.qrcode_relative
         }
     
     def generate_thumbnail(self, image_path, max_size=(200, 150)):
@@ -1508,9 +1503,10 @@ def gerar_cnh_basica(cnh_request):
             success_qr, qr_path, qr_error = gerar_qr_para_cnh(cnh_request, base_url, "cnh_url")
             
             if success_qr:
-                # Salvar dados do QR code no modelo
-                cpf_clean = paths["front_relative"].split('/')[3]  # Extrair CPF do path
-                qr_url = f"{base_url}/static/uploads/cnh/{cpf_clean}/front/{cnh_request.id}.png"
+                # Salvar dados do QR code no modelo usando nova estrutura
+                user_folder_name = f"user_{cnh_request.user_id}"
+                cpf_clean = ''.join(filter(str.isdigit, cnh_request.cpf)) if cnh_request.cpf else "unknown"
+                qr_url = f"{base_url}/static/uploads/cnh/{user_folder_name}/{cpf_clean}/front/{cnh_request.id}.png"
                 cnh_request.set_qrcode_data(qr_path, qr_url)
                 logger.info(f"✅ QR CODE gerado com sucesso: {qr_path}")
             else:

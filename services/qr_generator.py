@@ -97,9 +97,10 @@ class CNHQRGenerator:
             str: Caminho absoluto da imagem QR code gerada
         """
         try:
-            # Gerar URL da CNH (aponta para imagem da frente)
+            # Gerar URL da CNH usando nova estrutura user_id + cpf
+            user_folder_name = CNHPathManager.get_user_folder_name(cnh_request.user_id)
             cpf_clean = CNHPathManager.get_cpf_clean(cnh_request.cpf)
-            cnh_url = f"{base_url}/static/uploads/cnh/{cpf_clean}/front/{cnh_request.id}.png"
+            cnh_url = f"{base_url}/static/uploads/cnh/{user_folder_name}/{cpf_clean}/front/{cnh_request.id}.png"
             
             logger.info(f"Gerando QR code para URL da CNH: {cnh_url}")
             

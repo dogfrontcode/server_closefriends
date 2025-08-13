@@ -664,7 +664,7 @@ class CNHRequest(db.Model):
     
     def get_qrcode_url(self):
         """
-        Retorna URL pública do QR code.
+        Retorna URL pública do QR code usando nova estrutura user_id + cpf.
         
         Returns:
             str: URL do QR code ou None se não existir
@@ -672,9 +672,11 @@ class CNHRequest(db.Model):
         if not self.qr_code_path:
             return None
         
-        # Limpar CPF para usar na URL
-        cpf_limpo = ''.join(filter(str.isdigit, self.cpf)) if self.cpf else f"user_{self.user_id}"
-        return f'/static/uploads/cnh/{cpf_limpo}/qrcode/{self.id}.png'
+        # Usar nova estrutura: user_{id}/{cpf}/qrcode/
+        from services.path_manager import CNHPathManager
+        user_folder_name = CNHPathManager.get_user_folder_name(self.user_id)
+        cpf_limpo = CNHPathManager.get_cpf_clean(self.cpf)
+        return f'/static/uploads/cnh/{user_folder_name}/{cpf_limpo}/qrcode/{self.id}.png'
     
     def get_qrcode_filename(self):
         """

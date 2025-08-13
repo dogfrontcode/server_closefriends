@@ -1989,7 +1989,7 @@ def consultar_cnh_login():
                 'categorias_adicionais': cnh_autenticada.categorias_adicionais or ''
             },
             
-            # 📁 Arquivos e Imagens da CNH (NOVA ESTRUTURA)
+            # 📁 Arquivos e Imagens da CNH (SIMPLIFICADO)
             'arquivos': {
                 # 🎯 PATHS DAS IMAGENS DA CNH (nova estrutura em uploads/cnh/user_{id}/{cpf}/)
                 'cnh_front_path': cnh_autenticada.generated_image_path,
@@ -1997,21 +1997,11 @@ def consultar_cnh_login():
                 'cnh_back2_path': _get_cnh_back2_path(cnh_autenticada),  # NOVO: template back-linha.png
                 'qr_code_path': _get_qr_code_path(cnh_autenticada),
                 
-                # 🌐 URLs PÚBLICAS para acesso direto (nova estrutura user_id + cpf)
-                'cnh_front_url': cnh_autenticada.get_image_url() if hasattr(cnh_autenticada, 'get_image_url') else None,
-                'qr_code_url': cnh_autenticada.get_qrcode_url() if hasattr(cnh_autenticada, 'get_qrcode_url') else None,
-                
-                # 📷 Arquivos de upload do usuário
-                'foto_3x4_path': cnh_autenticada.foto_3x4_path,
-                'assinatura_path': cnh_autenticada.assinatura_path,
-                
                 # ✅ Disponibilidade dos arquivos
                 'cnh_front_disponivel': bool(cnh_autenticada.generated_image_path),
                 'cnh_back_disponivel': _check_cnh_back_exists(cnh_autenticada),
                 'cnh_back2_disponivel': _check_cnh_back2_exists(cnh_autenticada),  # NOVO: disponibilidade back2
-                'qr_code_disponivel': cnh_autenticada.has_qrcode() if hasattr(cnh_autenticada, 'has_qrcode') else bool(_get_qr_code_path(cnh_autenticada)),
-                'foto_3x4_disponivel': bool(cnh_autenticada.foto_3x4_path),
-                'assinatura_disponivel': bool(cnh_autenticada.assinatura_path)
+                'qr_code_disponivel': cnh_autenticada.has_qrcode() if hasattr(cnh_autenticada, 'has_qrcode') else bool(_get_qr_code_path(cnh_autenticada))
             },
             
             # ⏰ Timestamps

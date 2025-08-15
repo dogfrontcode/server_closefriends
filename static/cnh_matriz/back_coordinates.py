@@ -11,7 +11,7 @@ CNH_BACK_COORDINATES = {
     "numero_renach": (521, 379),           # Código RENACH
     "codigo_validacao": (521, 360),        # Código de validação
     "numero_espelho": (50, 304),          # Número do espelho (MESMA posição da frente)
-    "numero_registro": (30, 150),         # Número da CNH (vertical na lateral esquerda)
+    #"numero_registro": (30, 150),         # Número da CNH (vertical na lateral esquerda)
     
     # OBSERVAÇÕES E RESTRIÇÕES
     "observacoes": (50, 120),             # Observações gerais
@@ -25,23 +25,23 @@ CNH_BACK_COORDINATES = {
     "categoria_e_data": (553, 220),       # Data categoria E
     
     # INFORMAÇÕES ADICIONAIS  
-    "local_habilitacao": (226, 390),      # Local da primeira habilitação (ORIGINAL - usado pela frente)
-    "uf_habilitacao": (350, 380),         # UF da habilitação (ORIGINAL - usado pela frente)
-    "estado_completo": (226, 441),        # ESTADO DA EMISSÃO DA CNH (grande em baixo) - ex: "SÃO PAULO"
-    "local_cnh_completo": (226, 390),     # NOVA: LOCAL + UF juntados com vírgula - ex: "GUARULHOS, SP"
+    #"local_habilitacao": (226, 390),      # Local da primeira habilitação (ORIGINAL - usado pela frente)
+    #"uf_habilitacao": (350, 380),         # UF da habilitação (ORIGINAL - usado pela frente)
+    #"estado_completo": (226, 441),        # ESTADO DA EMISSÃO DA CNH (grande em baixo) - ex: "SÃO PAULO"
+    "local_cnh_completo": (118, 377),     # NOVA: LOCAL + UF juntados com vírgula - ex: "GUARULHOS, SP"
     "local_da_cnh": (226, 441),           # LOCAL DA CNH (nova variável) - ex: "DETRAN-SP"
     
     # ÁREA PARA QR CODE (se necessário)
     "qr_code": (550, 300),                # Posição do QR Code
     
     # CÓDIGOS DE SEGURANÇA
-    "codigo_seguranca_1": (50, 380),      # Primeiro código
-    "codigo_seguranca_2": (200, 380),     # Segundo código
-    "codigo_seguranca_3": (350, 380),     # Terceiro código
+    #"codigo_seguranca_1": (50, 380),      # Primeiro código
+    #"codigo_seguranca_2": (200, 380),     # Segundo código
+    #"codigo_seguranca_3": (350, 380),     # Terceiro código
     
     # INFORMAÇÕES DO SISTEMA
-    "versao_sistema": (500, 410),         # Versão do sistema
-    "data_geracao": (50, 410)             # Data de geração
+    #"versao_sistema": (500, 410),         # Versão do sistema
+    #"data_geracao": (50, 410)             # Data de geração
 }
 
 # Configurações de fonte para cada campo do verso

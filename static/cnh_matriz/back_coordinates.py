@@ -25,8 +25,10 @@ CNH_BACK_COORDINATES = {
     "categoria_e_data": (553, 220),       # Data categoria E
     
     # INFORMAÇÕES ADICIONAIS  
+    "local_habilitacao": (226, 390),      # Local da primeira habilitação (ORIGINAL - usado pela frente)
+    "uf_habilitacao": (350, 380),         # UF da habilitação (ORIGINAL - usado pela frente)
     "estado_completo": (226, 441),        # ESTADO DA EMISSÃO DA CNH (grande em baixo) - ex: "SÃO PAULO"
-    "local_cnh": (226, 390),              # LOCAL + UF LOCAL com vírgula - ex: "GUARULHOS, SP"
+    "local_cnh_completo": (226, 390),     # NOVA: LOCAL + UF juntados com vírgula - ex: "GUARULHOS, SP"
     
     # ÁREA PARA QR CODE (se necessário)
     "qr_code": (550, 300),                # Posição do QR Code
@@ -61,8 +63,10 @@ BACK_FONT_CONFIGS = {
     "categoria_e_data": {"size": 11   , "color": (0, 0, 0)},
     
     # Local da habilitação
+    "local_habilitacao": {"size": 11, "color": (0, 0, 0)},               # ORIGINAL - usado pela frente
+    "uf_habilitacao": {"size": 11, "color": (0, 0, 0)},                  # ORIGINAL - usado pela frente  
     "estado_completo": {"size": 30, "color": (0, 0, 0), "bold": True},   # ESTADO DA EMISSÃO grande
-    "local_cnh": {"size": 14, "color": (0, 0, 0)},                       # LOCAL + UF com vírgula
+    "local_cnh_completo": {"size": 14, "color": (0, 0, 0)},              # NOVA: LOCAL + UF com vírgula
     
     # Códigos de segurança - muito pequeno
     "codigo_seguranca_1": {"size": 8, "color": (128, 128, 128)},  # CINZA

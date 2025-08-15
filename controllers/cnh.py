@@ -157,6 +157,7 @@ def gerar_dados_cnh_aleatorios():
         'uf_cnh': uf_escolhida,
         'local_municipio': 'SÃO PAULO',  # Padrão em maiúsculo
         'local_uf': uf_escolhida,
+        'local_da_cnh': random.choice(['SAO PAULO', 'RIO DE JANEIRO', 'BELO HORIZONTE', 'PORTO ALEGRE', 'CURITIBA']),
         'acc': random.choice(['SIM', 'NAO']),
         # 🆕 NÚMEROS DE CONTROLE OBRIGATÓRIOS
         'numero_registro': gerar_numero_registro(),

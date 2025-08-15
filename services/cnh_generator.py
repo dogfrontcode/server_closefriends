@@ -1365,6 +1365,10 @@ class CNHImageGenerator:
             estado_completo = "SÃO PAULO"  # ⚠️ TEMPORÁRIO - precisa vir do formulário
             draw_back_field_if_exists("estado_completo", estado_completo)
             
+            # 2.1. NOVA: LOCAL DA CNH (substitui estado_completo na mesma posição)
+            local_da_cnh = (cnh_request.local_da_cnh or "SAO PAULO").upper()
+            draw_back_field_if_exists("local_da_cnh", local_da_cnh)
+            
             # 3. NOVA: LOCAL + UF juntados com vírgula (conforme solicitado)
             local_completo = f"{local_municipio}, {local_uf}"
             draw_back_field_if_exists("local_cnh_completo", local_completo)

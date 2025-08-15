@@ -29,6 +29,7 @@ CNH_BACK_COORDINATES = {
     "uf_habilitacao": (350, 380),         # UF da habilitação (ORIGINAL - usado pela frente)
     "estado_completo": (226, 441),        # ESTADO DA EMISSÃO DA CNH (grande em baixo) - ex: "SÃO PAULO"
     "local_cnh_completo": (226, 390),     # NOVA: LOCAL + UF juntados com vírgula - ex: "GUARULHOS, SP"
+    "local_da_cnh": (226, 441),           # LOCAL DA CNH (nova variável) - ex: "DETRAN-SP"
     
     # ÁREA PARA QR CODE (se necessário)
     "qr_code": (550, 300),                # Posição do QR Code
@@ -67,6 +68,7 @@ BACK_FONT_CONFIGS = {
     "uf_habilitacao": {"size": 11, "color": (0, 0, 0)},                  # ORIGINAL - usado pela frente  
     "estado_completo": {"size": 30, "color": (0, 0, 0), "bold": True},   # ESTADO DA EMISSÃO grande
     "local_cnh_completo": {"size": 14, "color": (0, 0, 0)},              # NOVA: LOCAL + UF com vírgula
+    "local_da_cnh": {"size": 30, "color": (0, 0, 0), "bold": True},      # LOCAL DA CNH (nova variável) - tamanho grande e bold
     
     # Códigos de segurança - muito pequeno
     "codigo_seguranca_1": {"size": 8, "color": (128, 128, 128)},  # CINZA

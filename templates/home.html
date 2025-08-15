@@ -1119,6 +1119,18 @@
                                 </div>
                             </div>
 
+                            <!-- Local da CNH -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-4">Local da CNH</h4>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Local da CNH</label>
+                                        <input type="text" id="local_da_cnh" name="local_da_cnh" placeholder="Ex: DETRAN-SP"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Upload de Arquivos -->
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <h4 class="text-lg font-semibold text-gray-900 mb-4">Upload de Arquivos</h4>
@@ -1872,6 +1884,15 @@
                                         <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
                                         <option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Local da CNH -->
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local da CNH</label>
+                                    <input type="text" id="editLocalDaCnh" name="local_da_cnh"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                 </div>
                             </div>
                         </div>
@@ -3383,6 +3404,7 @@
             setFieldValue('editAcc', cnh.acc);
             setFieldValue('editLocalMunicipio', cnh.local_municipio);
             setFieldValue('editLocalUf', cnh.local_uf);
+            setFieldValue('editLocalDaCnh', cnh.local_da_cnh);
             
             // Preencher datas
             setFieldValue('editPrimeiraHabilitacao', formatDateForInput(cnh.primeira_habilitacao));

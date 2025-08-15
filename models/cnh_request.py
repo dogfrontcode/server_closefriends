@@ -53,6 +53,7 @@ class CNHRequest(db.Model):
     # Local da habilitação
     local_municipio = db.Column(db.String(100))
     local_uf = db.Column(db.String(2))
+    local_da_cnh = db.Column(db.String(100))
     
     # Categorias adicionais (JSON string)
     categorias_adicionais = db.Column(db.Text)  # JSON das categorias com datas
@@ -261,7 +262,7 @@ class CNHRequest(db.Model):
             'nome_pai', 'nome_mae', 'doc_identidade_numero', 'doc_identidade_orgao',
             'doc_identidade_uf', 'sexo_condutor', 'uf_cnh', 'numero_registro',
             'numero_espelho', 'codigo_validacao', 'numero_renach', 'local_municipio',
-            'local_uf', 'categoria_habilitacao', 'acc', 'observacoes', 'categorias_adicionais'
+            'local_uf', 'local_da_cnh', 'categoria_habilitacao', 'acc', 'observacoes', 'categorias_adicionais'
         ]
         
         for campo in campos_texto:
@@ -555,6 +556,7 @@ class CNHRequest(db.Model):
             'acc': self.acc or 'NAO',
             'local_municipio': self.local_municipio or '',
             'local_uf': self.local_uf or '',
+            'local_da_cnh': self.local_da_cnh or '',
             'observacoes': self.observacoes or '',
             'custo': self.custo,
             'status': self.status,

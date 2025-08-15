@@ -155,7 +155,7 @@ def gerar_dados_cnh_aleatorios():
         'nome_pai': random.choice(nomes_pai) if random.random() < 0.8 else None,  # 80% chance de ter pai
         'nacionalidade': 'BRASILEIRA',
         'uf_cnh': uf_escolhida,
-        'local_municipio': cidade_escolhida,
+        'local_municipio': 'SÃO PAULO',  # Padrão em maiúsculo
         'local_uf': uf_escolhida,
         'acc': random.choice(['SIM', 'NAO']),
         # 🆕 NÚMEROS DE CONTROLE OBRIGATÓRIOS

@@ -9,6 +9,7 @@ try:
     from .controllers.credits import credits_bp
     from .controllers.cnh import cnh_bp
     from .controllers.pix_payment import pix_bp
+    from .controllers.test_endpoints import test_bp
     from .models.user import User
     from .models.credit_transaction import CreditTransaction
     from .models.cnh_request import CNHRequest
@@ -19,6 +20,7 @@ except ImportError:
     from controllers.credits import credits_bp
     from controllers.cnh import cnh_bp
     from controllers.pix_payment import pix_bp
+    from controllers.test_endpoints import test_bp
     from models.user import User
     from models.credit_transaction import CreditTransaction
     from models.cnh_request import CNHRequest
@@ -58,6 +60,7 @@ def create_app():
     app.register_blueprint(credits_bp)
     app.register_blueprint(cnh_bp)
     app.register_blueprint(pix_bp)  # Registrar blueprint PIX
+    app.register_blueprint(test_bp)  # Registrar blueprint de TESTE
 
     with app.app_context():
         db.create_all()

@@ -50,6 +50,7 @@ class CNHImageGenerator:
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.FONTS_DIR, exist_ok=True)
     
+
     def _load_fonts(self):
         """Carrega fontes para uso na imagem com suporte UTF-8."""
         try:
@@ -1338,11 +1339,12 @@ class CNHImageGenerator:
             draw_back_field_if_exists("numero_renach", cnh_request.numero_renach)
             draw_back_field_if_exists("codigo_validacao", cnh_request.codigo_validacao)
             
-            # NÚMERO DO ESPELHO (vertical como na frente)
+            # NÚMERO DO ESPELHO (vertical EXATAMENTE como na frente)
             numero_espelho = cnh_request.numero_espelho or f"{cnh_request.id + 1000000000:011d}"
             if numero_espelho:
-                espelho_coord = CNH_BACK_COORDINATES.get("numero_espelho", (100, 80))
-                self._draw_numero_espelho_vertical(draw, str(numero_espelho), espelho_coord)
+                espelho_coord = CNH_BACK_COORDINATES.get("numero_espelho", (50, 304))
+                # USAR A MESMA FUNÇÃO DA FRENTE para garantir formato idêntico
+                self._draw_numero_habilitacao_vertical(draw, str(numero_espelho), espelho_coord)
             
             # NÚMERO DO REGISTRO DA CNH (lateral esquerda)
             draw_back_field_if_exists("numero_registro", cnh_request.numero_registro)
@@ -1350,9 +1352,21 @@ class CNHImageGenerator:
             # OBSERVAÇÕES
             draw_back_field_if_exists("observacoes", cnh_request.observacoes)
             
-            # LOCAL DA HABILITAÇÃO
-            draw_back_field_if_exists("local_habilitacao", cnh_request.local_municipio)
-            draw_back_field_if_exists("uf_habilitacao", cnh_request.local_uf)
+            # LOCAL DA CNH - 3 variáveis separadas
+            # 1. ESTADO COMPLETO (grande em baixo) - por enquanto fixo "SÃO PAULO"
+            estado_completo = "SÃO PAULO"  # Cliente pode personalizar isso no futuro
+            logger.info(f"🏛️ ESTADO COMPLETO: '{estado_completo}'")
+            draw_back_field_if_exists("estado_completo", estado_completo)
+            
+            # 2. UF da CNH (sigla pequena) - vem do formulário uf_cnh
+            uf_sigla = (cnh_request.uf_cnh or "SP").upper()
+            logger.info(f"🗺️ UF SIGLA: '{uf_sigla}' (original: {cnh_request.uf_cnh})")
+            draw_back_field_if_exists("uf_cnh", uf_sigla)
+            
+            # 3. MUNICÍPIO (médio) = Município da primeira habilitação  
+            municipio = (cnh_request.local_municipio or "SÃO PAULO").upper()
+            logger.info(f"🏙️ MUNICÍPIO: '{municipio}' (original: {cnh_request.local_municipio})")
+            draw_back_field_if_exists("municipio_cnh", municipio)
             
             # HISTÓRICO DE CATEGORIAS (CATEGORIA A)
             self._draw_category_history(draw, cnh_request)

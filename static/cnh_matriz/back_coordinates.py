@@ -8,9 +8,9 @@ Coordenadas baseadas no template back-cnh.png (700x440px).
 # Coordenadas dos campos de texto no verso (x, y)
 CNH_BACK_COORDINATES = {
     # INFORMAÇÕES TÉCNICAS
-    "numero_renach": (100, 50),           # Código RENACH
-    "codigo_validacao": (400, 50),        # Código de validação
-    "numero_espelho": (100, 80),          # Número do espelho
+    "numero_renach": (521, 379),           # Código RENACH
+    "codigo_validacao": (521, 360),        # Código de validação
+    "numero_espelho": (50, 304),          # Número do espelho (MESMA posição da frente)
     "numero_registro": (30, 300),         # Número da CNH (vertical na lateral esquerda)
     
     # OBSERVAÇÕES E RESTRIÇÕES
@@ -18,15 +18,16 @@ CNH_BACK_COORDINATES = {
     "restricoes": (50, 160),              # Códigos de restrição
     
     # HISTÓRICO DE CATEGORIAS
-    "categoria_a_data": (273, 56),       # Data categoria A
+    "categoria_a_data": (273, 56),        # Data categoria A
     "categoria_b_data": (273, 103),       # Data categoria B  
     "categoria_c_data": (273, 150),       # Data categoria C
     "categoria_d_data": (553 , 32),       # Data categoria D
     "categoria_e_data": (553, 220),       # Data categoria E
     
-    # INFORMAÇÕES ADICIONAIS
-    "local_habilitacao": (50, 280),       # Local da primeira habilitação
-    "uf_habilitacao": (300, 280),         # UF da habilitação
+    # INFORMAÇÕES ADICIONAIS  
+    "estado_completo": (226, 441),        # ESTADO COMPLETO (grande em baixo) - ex: "SÃO PAULO"
+    "uf_cnh": (350, 390),                 # UF da CNH (sigla) - ex: "AM", "SP"
+    "municipio_cnh": (226, 390),          # MUNICÍPIO DA CNH (menor) - ex: "Guarulhos"
     
     # ÁREA PARA QR CODE (se necessário)
     "qr_code": (550, 300),                # Posição do QR Code
@@ -46,7 +47,7 @@ BACK_FONT_CONFIGS = {
     # Códigos técnicos - fonte menor e monospaciada
     "numero_renach": {"size": 10, "color": (0, 0, 0), "bold": True},
     "codigo_validacao": {"size": 10, "color": (0, 0, 0), "bold": True},
-    "numero_espelho": {"size": 12, "color": (0, 0, 0), "bold": True},  # Vertical como na frente
+    "numero_espelho": {"size": 30, "color": (0, 0, 0), "bold": True},  # MESMA fonte da frente
     "numero_registro": {"size": 12, "color": (0, 0, 0), "bold": True},  # Número da CNH no verso
     
     # Observações - texto normal
@@ -61,8 +62,9 @@ BACK_FONT_CONFIGS = {
     "categoria_e_data": {"size": 11   , "color": (0, 0, 0)},
     
     # Local da habilitação
-    "local_habilitacao": {"size": 11, "color": (0, 0, 0)},
-    "uf_habilitacao": {"size": 11, "color": (0, 0, 0)},
+    "estado_completo": {"size": 30, "color": (0, 0, 0), "bold": True},   # ESTADO COMPLETO grande
+    "uf_cnh": {"size": 12, "color": (0, 0, 0)},                          # UF sigla pequena
+    "municipio_cnh": {"size": 14, "color": (0, 0, 0)},                   # MUNICÍPIO médio
     
     # Códigos de segurança - muito pequeno
     "codigo_seguranca_1": {"size": 8, "color": (128, 128, 128)},  # CINZA

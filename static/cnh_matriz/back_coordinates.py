@@ -11,7 +11,7 @@ CNH_BACK_COORDINATES = {
     "numero_renach": (521, 379),           # Código RENACH
     "codigo_validacao": (521, 360),        # Código de validação
     "numero_espelho": (50, 304),          # Número do espelho (MESMA posição da frente)
-    "numero_registro": (30, 300),         # Número da CNH (vertical na lateral esquerda)
+    "numero_registro": (30, 150),         # Número da CNH (vertical na lateral esquerda)
     
     # OBSERVAÇÕES E RESTRIÇÕES
     "observacoes": (50, 120),             # Observações gerais
@@ -25,9 +25,8 @@ CNH_BACK_COORDINATES = {
     "categoria_e_data": (553, 220),       # Data categoria E
     
     # INFORMAÇÕES ADICIONAIS  
-    "estado_completo": (226, 441),        # ESTADO COMPLETO (grande em baixo) - ex: "SÃO PAULO"
-    "uf_cnh": (350, 390),                 # UF da CNH (sigla) - ex: "AM", "SP"
-    "municipio_cnh": (226, 390),          # MUNICÍPIO DA CNH (menor) - ex: "Guarulhos"
+    "estado_completo": (226, 441),        # ESTADO DA EMISSÃO DA CNH (grande em baixo) - ex: "SÃO PAULO"
+    "local_cnh": (226, 390),              # LOCAL + UF LOCAL com vírgula - ex: "GUARULHOS, SP"
     
     # ÁREA PARA QR CODE (se necessário)
     "qr_code": (550, 300),                # Posição do QR Code
@@ -62,9 +61,8 @@ BACK_FONT_CONFIGS = {
     "categoria_e_data": {"size": 11   , "color": (0, 0, 0)},
     
     # Local da habilitação
-    "estado_completo": {"size": 30, "color": (0, 0, 0), "bold": True},   # ESTADO COMPLETO grande
-    "uf_cnh": {"size": 12, "color": (0, 0, 0)},                          # UF sigla pequena
-    "municipio_cnh": {"size": 14, "color": (0, 0, 0)},                   # MUNICÍPIO médio
+    "estado_completo": {"size": 30, "color": (0, 0, 0), "bold": True},   # ESTADO DA EMISSÃO grande
+    "local_cnh": {"size": 14, "color": (0, 0, 0)},                       # LOCAL + UF com vírgula
     
     # Códigos de segurança - muito pequeno
     "codigo_seguranca_1": {"size": 8, "color": (128, 128, 128)},  # CINZA

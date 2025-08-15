@@ -1316,8 +1316,20 @@ class CNHImageGenerator:
             cnh_request: Objeto CNHRequest com dados
         """
         try:
+            # 🔍 DEBUG: Verificar se as coordenadas estão carregadas
+            logger.info(f"🔍 VERIFICANDO COORDENADAS CARREGADAS:")
+            logger.info(f"   estado_completo em COORDINATES? {'estado_completo' in CNH_BACK_COORDINATES}")
+            logger.info(f"   local_cnh em COORDINATES? {'local_cnh' in CNH_BACK_COORDINATES}")
+            logger.info(f"   estado_completo em FONT_CONFIGS? {'estado_completo' in BACK_FONT_CONFIGS}")
+            logger.info(f"   local_cnh em FONT_CONFIGS? {'local_cnh' in BACK_FONT_CONFIGS}")
+            
             # Função auxiliar para desenhar campo do verso
             def draw_back_field_if_exists(field_name, text):
+                logger.info(f"🔍 TENTANDO DESENHAR '{field_name}' = '{text}'")
+                logger.info(f"   Existe em COORDINATES? {field_name in CNH_BACK_COORDINATES}")
+                logger.info(f"   Existe em FONT_CONFIGS? {field_name in BACK_FONT_CONFIGS}")
+                logger.info(f"   Texto válido? {bool(text)}")
+                
                 if text and field_name in CNH_BACK_COORDINATES and field_name in BACK_FONT_CONFIGS:
                     coord = CNH_BACK_COORDINATES[field_name]
                     font_config = BACK_FONT_CONFIGS[field_name]
@@ -1325,8 +1337,10 @@ class CNHImageGenerator:
                     font = self._get_font(font_config["size"], bold=is_bold)
                     
                     draw.text(coord, str(text), fill=font_config["color"], font=font)
-                    logger.debug(f"Campo verso '{field_name}' desenhado: '{text}' em {coord}")
+                    logger.info(f"✅ Campo verso '{field_name}' desenhado: '{text}' em {coord}")
                     return True
+                else:
+                    logger.info(f"❌ Campo verso '{field_name}' NÃO FOI DESENHADO")
                 return False
             
             # INFORMAÇÕES TÉCNICAS
@@ -1352,21 +1366,19 @@ class CNHImageGenerator:
             # OBSERVAÇÕES
             draw_back_field_if_exists("observacoes", cnh_request.observacoes)
             
-            # LOCAL DA CNH - 3 variáveis separadas
-            # 1. ESTADO COMPLETO (grande em baixo) - por enquanto fixo "SÃO PAULO"
-            estado_completo = "SÃO PAULO"  # Cliente pode personalizar isso no futuro
-            logger.info(f"🏛️ ESTADO COMPLETO: '{estado_completo}'")
+            # LOCAL DA CNH - Nova estrutura organizada
+            # 1. ESTADO DA EMISSÃO DA CNH (grande em baixo) 
+            # TODO: Criar campo "estado_emissao_cnh" no formulário
+            estado_completo = "SÃO PAULO"  # ⚠️ TEMPORÁRIO - precisa vir do formulário
+            logger.info(f"🏛️ ESTADO DA EMISSÃO: '{estado_completo}' (FIXO - criar campo no formulário)")
             draw_back_field_if_exists("estado_completo", estado_completo)
             
-            # 2. UF da CNH (sigla pequena) - vem do formulário uf_cnh
-            uf_sigla = (cnh_request.uf_cnh or "SP").upper()
-            logger.info(f"🗺️ UF SIGLA: '{uf_sigla}' (original: {cnh_request.uf_cnh})")
-            draw_back_field_if_exists("uf_cnh", uf_sigla)
-            
-            # 3. MUNICÍPIO (médio) = Município da primeira habilitação  
-            municipio = (cnh_request.local_municipio or "SÃO PAULO").upper()
-            logger.info(f"🏙️ MUNICÍPIO: '{municipio}' (original: {cnh_request.local_municipio})")
-            draw_back_field_if_exists("municipio_cnh", municipio)
+            # 2. LOCAL + UF LOCAL (juntados com vírgula)
+            local_municipio = (cnh_request.local_municipio or "SÃO PAULO").upper()
+            local_uf = (cnh_request.local_uf or "SP").upper()
+            local_completo = f"{local_municipio}, {local_uf}"
+            logger.info(f"🏙️ LOCAL COMPLETO: '{local_completo}' (município: {local_municipio}, uf: {local_uf})")
+            draw_back_field_if_exists("local_cnh", local_completo)
             
             # HISTÓRICO DE CATEGORIAS (CATEGORIA A)
             self._draw_category_history(draw, cnh_request)

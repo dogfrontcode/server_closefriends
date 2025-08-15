@@ -20,7 +20,6 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from static.cnh_matriz.front_coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
 from static.cnh_matriz.back_coordinates import CNH_BACK_COORDINATES, BACK_FONT_CONFIGS, BACK_TEMPLATE_PATH, QR_CODE_AREA, CODIGOS_RESTRICAO
-from static.cnh_matriz.back_coordinates_linha import get_linha_template, get_linha_coordinates, get_linha_config
 from services.path_manager import CNHPathManager, CNHPaths
 
 logger = logging.getLogger(__name__)
@@ -173,7 +172,7 @@ class CNHImageGenerator:
             draw_field_if_exists("nome_completo", nome_completo.upper())
             
             # Número da habilitação (customizado com dimensões específicas)
-            numero_habilitacao = cnh_request.numero_espelho or f"{cnh_request.id + 1000000000:011d}"
+            numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id + 5000000000:011d}"
             self._draw_numero_habilitacao_vertical(draw, str(numero_habilitacao), (50, 304))
             
             # Outros campos - só desenha se tiver coordenadas definidas
@@ -629,81 +628,6 @@ class CNHImageGenerator:
             # Fallback: usar o método de texto rotacionado padrão
             font = self._get_font(10, bold=True)
             self._draw_rotated_text(draw, numero_text, position, font, (0, 0, 0), rotation=90)
-    
-    def _format_nome_edit_linha(self, nome_completo):
-        """
-        Formata o nome completo para uso na linha de dados da CNH.
-        
-        Regras de formatação:
-        - Converte para maiúsculas
-        - Primeiro espaço vira <<
-        - Demais espaços viram <
-        
-        Args:
-            nome_completo (str): Nome completo original
-            
-        Returns:
-            str: Nome formatado para linha (ex: "TIAGO<<DOS<SANTOS<RODRIGUES")
-        
-        Exemplo:
-            "Tiago dos Santos Rodrigues" -> "TIAGO<<DOS<SANTOS<RODRIGUES"
-        """
-        if not nome_completo:
-            return ""
-        
-        # Converte para maiúsculas e remove espaços extras
-        nome = nome_completo.strip().upper()
-        
-        # Quebra em palavras
-        palavras = nome.split()
-        
-        if len(palavras) == 0:
-            return ""
-        elif len(palavras) == 1:
-            return palavras[0]
-        else:
-            # Primeira palavra + << + demais palavras separadas por <
-            resultado = palavras[0] + "<<"
-            for i, palavra in enumerate(palavras[1:], 1):
-                if i > 1:
-                    resultado += "<"
-                resultado += palavra
-            
-            logger.debug(f"Nome formatado para linha: '{nome_completo}' -> '{resultado}'")
-            return resultado
-    
-    def _generate_linha_dados(self, cnh_request):
-        """
-        Gera a linha de dados completa para o verso da CNH.
-        
-        Args:
-            cnh_request: Objeto CNHRequest com dados da CNH
-            
-        Returns:
-            str: Linha de dados formatada com nome editado
-        """
-        try:
-            # Obter template da linha
-            template = get_linha_template()
-            
-            # Formatar nome para a linha
-            nome_edit = self._format_nome_edit_linha(cnh_request.nome_completo)
-            
-            # Substituir placeholder no template
-            linha_completa = template.format(nome_edit=nome_edit)
-            
-            logger.debug(f"Linha de dados gerada para CNH {cnh_request.id}")
-            logger.debug(f"Nome original: '{cnh_request.nome_completo}'")
-            logger.debug(f"Nome editado: '{nome_edit}'")
-            
-            return linha_completa
-            
-        except Exception as e:
-            logger.error(f"Erro ao gerar linha de dados: {str(e)}")
-            # Fallback: linha básica sem nome
-            return """I<BRA0267451913<012<<<<<<<<<<<
-0101192M3404274BRA<<<<<<<<<<6<
-NOME<<NAO<INFORMADO<<<"""
     
     def _process_foto_3x4(self, main_image, cnh_request):
         """
@@ -1517,50 +1441,6 @@ NOME<<NAO<INFORMADO<<<"""
         except Exception as e:
             logger.error(f"Erro ao gerar códigos de segurança: {str(e)}")
     
-    def _draw_linha_dados(self, draw, cnh_request):
-        """
-        Desenha a linha de dados do verso da CNH.
-        
-        Args:
-            draw: Objeto ImageDraw
-            cnh_request: Objeto CNHRequest com dados
-        """
-        try:
-            # Gerar linha de dados
-            linha_dados = self._generate_linha_dados(cnh_request)
-            
-            # Obter coordenadas e configurações
-            linha_coords = get_linha_coordinates()
-            linha_config = get_linha_config()
-            
-            if "linha_dados" in linha_coords:
-                coord_config = linha_coords["linha_dados"]
-                position = coord_config["position"]
-                font_size = coord_config["font_size"]
-                color = coord_config["color"]
-                line_height = coord_config["line_height"]
-                
-                # Dividir linha em linhas separadas
-                linhas = linha_dados.strip().split('\n')
-                
-                # Desenhar cada linha
-                for i, linha in enumerate(linhas):
-                    if linha.strip():  # Só desenhar se a linha não estiver vazia
-                        y_offset = i * line_height
-                        linha_position = (position[0], position[1] + y_offset)
-                        
-                        # Usar a mesma fonte do sistema (ASUL-REGULAR.TTF)
-                        is_bold = coord_config.get("bold", False)
-                        font = self._get_font(font_size, bold=is_bold)
-                        draw.text(linha_position, linha, fill=color, font=font)
-                        
-                        logger.debug(f"Linha {i+1} desenhada: '{linha}' em {linha_position}")
-                
-                logger.info(f"✅ Linha de dados completa desenhada para CNH {cnh_request.id}")
-                
-        except Exception as e:
-            logger.error(f"Erro ao desenhar linha de dados: {str(e)}")
-    
     def generate_back2_cnh(self, cnh_request, output_path=None):
         """
         Gera o BACK2 da CNH usando a imagem back-linha.png como template.
@@ -1585,9 +1465,8 @@ NOME<<NAO<INFORMADO<<<"""
             
             draw = ImageDraw.Draw(image)
             
-            # Desenhar APENAS a linha de dados (específico do back2/back-linha.png)
-            # NÃO aplicar outros dados do back_coordinates.py
-            self._draw_linha_dados(draw, cnh_request)
+            # Aplicar dados usando as mesmas coordenadas do verso (back_coordinates.py)
+            self._apply_back_data_with_coordinates(draw, cnh_request)
             
             # Usar path específico ou gerar automaticamente
             if output_path:

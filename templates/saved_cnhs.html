@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema CNH - CNHs Salvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="min-h-screen bg-gradient overflow-x-hidden overflow-y-auto">
+    <div id="particles-js"></div>
+
+    <div class="flex min-h-screen relative z-10">
+        {% include "_sidebar.html" %}
+        <div class="flex-1 min-h-screen main-content">
+            {% include "_header.html" %}
+            <main class="p-6 bg-gray-50 min-h-screen">
+                <!-- Minhas CNHs Section -->
+                <div id="myCNHsSection" class="section-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900">Minhas CNHs</h3>
+                                <button onclick="loadMyCNHs()" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-refresh"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div id="cnhList">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-id-card text-4xl mb-3 opacity-50"></i>
+                                    <p>Carregando suas CNHs...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Controles de Paginação -->
+                            <div id="paginationControls" class="hidden mt-6 border-t border-gray-200 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <!-- Informação da Página -->
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <span>Mostrando </span>
+                                        <span id="showingStart" class="font-medium text-blue-600">1</span>
+                                        <span> a </span>
+                                        <span id="showingEnd" class="font-medium text-blue-600">20</span>
+                                        <span> de </span>
+                                        <span id="totalCNHsCount" class="font-medium text-blue-600">0</span>
+                                        <span> CNHs</span>
+                                    </div>
+
+                                    <!-- Navegação de Páginas -->
+                                    <div class="flex items-center space-x-2">
+                                        <!-- Botão Primeira Página -->
+                                        <button id="firstPageBtn" onclick="goToPage(1)" 
+                                                class="px-2 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                                disabled title="Primeira página">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+
+                                        <!-- Botão Anterior -->
+                                        <button id="prevPageBtn" onclick="goToPrevPage()" 
+                                                class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1" 
+                                                disabled>
+                                            <i class="fas fa-chevron-left text-xs"></i>
+                                            <span>Anterior</span>
+                                        </button>
+
+                                        <!-- Números de Página -->
+                                        <div id="pageNumbers" class="flex items-center space-x-1">
+                                            <!-- Será preenchido dinamicamente -->
+                                        </div>
+
+                                        <!-- Botão Próximo -->
+                                        <button id="nextPageBtn" onclick="goToNextPage()" 
+                                                class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1" 
+                                                disabled>
+                                            <span>Próximo</span>
+                                            <i class="fas fa-chevron-right text-xs"></i>
+                                        </button>
+
+                                        <!-- Botão Última Página -->
+                                        <button id="lastPageBtn" onclick="goToLastPage()" 
+                                                class="px-2 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                                disabled title="Última página">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Credits Section -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="cnhDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-id-card text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Detalhes da CNH</h3>
+                        <p class="text-sm text-gray-500">CNH ID: <span id="modalCnhId" class="font-medium">-</span></p>
+                    </div>
+                </div>
+                <button onclick="closeCNHModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Conteúdo do Modal -->
+            <div class="p-6 max-h-96 overflow-y-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Coluna Esquerda - Dados Pessoais -->
+                    <div class="space-y-6">
+                        <!-- Dados Básicos -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-blue-900 mb-3 flex items-center">
+                                <i class="fas fa-user mr-2"></i>
+                                Dados Pessoais
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nome Completo:</span>
+                                    <span id="modalNomeCompleto" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">CPF:</span>
+                                    <span id="modalCpf" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Data Nascimento:</span>
+                                    <span id="modalDataNascimento" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Sexo:</span>
+                                    <span id="modalSexo" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nacionalidade:</span>
+                                    <span id="modalNacionalidade" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Local Nascimento:</span>
+                                    <span id="modalLocalNascimento" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filiação -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-green-900 mb-3 flex items-center">
+                                <i class="fas fa-users mr-2"></i>
+                                Filiação
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nome do Pai:</span>
+                                    <span id="modalNomePai" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nome da Mãe:</span>
+                                    <span id="modalNomeMae" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documento de Identidade -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-yellow-900 mb-3 flex items-center">
+                                <i class="fas fa-id-badge mr-2"></i>
+                                Documento de Identidade
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Número:</span>
+                                    <span id="modalDocNumero" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Órgão Emissor:</span>
+                                    <span id="modalDocOrgao" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">UF:</span>
+                                    <span id="modalDocUf" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita - Dados da CNH -->
+                    <div class="space-y-6">
+                        <!-- Dados da CNH -->
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-purple-900 mb-3 flex items-center">
+                                <i class="fas fa-car mr-2"></i>
+                                Dados da CNH
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Categoria:</span>
+                                    <span id="modalCategoria" class="font-medium text-purple-600 text-lg">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Status:</span>
+                                    <span id="modalStatus" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">UF da CNH:</span>
+                                    <span id="modalUfCnh" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">ACC:</span>
+                                    <span id="modalAcc" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Local Habilitação:</span>
+                                    <span id="modalLocalHabilitacao" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datas -->
+                        <div class="bg-indigo-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-indigo-900 mb-3 flex items-center">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Datas
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">1ª Habilitação:</span>
+                                    <span id="modalPrimeiraHabilitacao" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Data Emissão:</span>
+                                    <span id="modalDataEmissao" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Validade:</span>
+                                    <span id="modalValidade" class="font-medium text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Criada em:</span>
+                                    <span id="modalCriadaEm" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Números de Controle -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                                <i class="fas fa-hashtag mr-2"></i>
+                                Números de Controle
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nº Registro:</span>
+                                    <span id="modalNumeroRegistro" class="font-medium text-gray-900 font-mono text-xs">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Nº Espelho:</span>
+                                    <span id="modalNumeroEspelho" class="font-medium text-gray-900 font-mono text-xs">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Cód. Validação:</span>
+                                    <span id="modalCodigoValidacao" class="font-medium text-gray-900 font-mono text-xs">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">RENACH:</span>
+                                    <span id="modalNumeroRenach" class="font-medium text-gray-900 font-mono text-xs">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="mt-6 bg-orange-50 p-4 rounded-lg">
+                    <h4 class="text-md font-semibold text-orange-900 mb-3 flex items-center">
+                        <i class="fas fa-sticky-note mr-2"></i>
+                        Observações
+                    </h4>
+                    <p id="modalObservacoes" class="text-sm text-gray-700 italic">-</p>
+                </div>
+
+                <!-- Imagem da CNH -->
+                <div class="mt-6" id="modalImageContainer">
+                    <h4 class="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-image mr-2"></i>
+                        Imagem da CNH Gerada
+                    </h4>
+                    <div class="bg-gray-100 p-4 rounded-lg text-center">
+                        <img id="modalCnhImage" 
+                             class="mx-auto max-w-full h-auto rounded-lg shadow-md border-2 border-gray-300 hidden" 
+                             alt="CNH Gerada">
+                        <p id="modalNoImage" class="text-gray-500 py-8">
+                            <i class="fas fa-image text-4xl mb-2 opacity-50"></i><br>
+                            Imagem não disponível
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer do Modal -->
+            <div class="flex items-center justify-end p-4 border-t border-gray-200 space-x-3">
+                <button onclick="closeCNHModal()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Fechar
+                </button>
+                <button id="modalDownloadBtn" 
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors hidden">
+                    <i class="fas fa-download mr-2"></i>
+                    Download CNH
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição da CNH -->
+    <div id="cnhEditModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-edit text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Editar CNH</h3>
+                        <p class="text-sm text-gray-500">CNH ID: <span id="editModalCnhId" class="font-medium">-</span></p>
+                    </div>
+                </div>
+                <button onclick="closeCNHEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Formulário de Edição -->
+            <form id="cnhEditForm" class="p-6 max-h-96 overflow-y-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Coluna Esquerda - Dados Pessoais -->
+                    <div class="space-y-4">
+                        <!-- Dados Básicos -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-blue-900 mb-3 flex items-center">
+                                <i class="fas fa-user mr-2"></i>
+                                Dados Pessoais
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                                    <input type="text" id="editNomeCompleto" name="nome_completo"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+                                    <input type="text" id="editCpf" name="cpf"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+                                    <input type="date" id="editDataNascimento" name="data_nascimento"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                                    <select id="editSexo" name="sexo_condutor"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Feminino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local de Nascimento</label>
+                                    <input type="text" id="editLocalNascimento" name="local_nascimento"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF Nascimento</label>
+                                    <select id="editUfNascimento" name="uf_nascimento"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP">SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filiação -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-green-900 mb-3 flex items-center">
+                                <i class="fas fa-users mr-2"></i>
+                                Filiação
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Pai</label>
+                                    <input type="text" id="editNomePai" name="nome_pai"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Mãe</label>
+                                    <input type="text" id="editNomeMae" name="nome_mae"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documento de Identidade -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-yellow-900 mb-3 flex items-center">
+                                <i class="fas fa-id-badge mr-2"></i>
+                                Documento de Identidade
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                                    <input type="text" id="editDocNumero" name="doc_identidade_numero"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Órgão Emissor</label>
+                                    <input type="text" id="editDocOrgao" name="doc_identidade_orgao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF</label>
+                                    <select id="editDocUf" name="doc_identidade_uf"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP">SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita - Dados da CNH -->
+                    <div class="space-y-4">
+                        <!-- Dados da CNH -->
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-purple-900 mb-3 flex items-center">
+                                <i class="fas fa-car mr-2"></i>
+                                Dados da CNH
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                                    <input type="text" id="editCategoria" name="categoria_habilitacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">UF da CNH</label>
+                                    <select id="editUfCnh" name="uf_cnh"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ACC</label>
+                                    <select id="editAcc" name="acc"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="NAO">NÃO</option>
+                                        <option value="SIM">SIM</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local Municipio</label>
+                                    <input type="text" id="editLocalMunicipio" name="local_municipio"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local UF</label>
+                                    <select id="editLocalUf" name="local_uf"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+                                        <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+                                        <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                        <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option>
+                                        <option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option>
+                                        <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                        <option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Local da CNH -->
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local da CNH</label>
+                                    <input type="text" id="editLocalDaCnh" name="local_da_cnh"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datas -->
+                        <div class="bg-indigo-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-indigo-900 mb-3 flex items-center">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Datas
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">1ª Habilitação</label>
+                                    <input type="date" id="editPrimeiraHabilitacao" name="primeira_habilitacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Emissão</label>
+                                    <input type="date" id="editDataEmissao" name="data_emissao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Validade</label>
+                                    <input type="date" id="editValidade" name="validade"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Números de Controle -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                                <i class="fas fa-hashtag mr-2"></i>
+                                Números de Controle
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nº Registro</label>
+                                    <input type="text" id="editNumeroRegistro" name="numero_registro"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nº Espelho</label>
+                                    <input type="text" id="editNumeroEspelho" name="numero_espelho"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cód. Validação</label>
+                                    <input type="text" id="editCodigoValidacao" name="codigo_validacao"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">RENACH</label>
+                                    <input type="text" id="editNumeroRenach" name="numero_renach"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="mt-6 bg-orange-50 p-4 rounded-lg">
+                    <h4 class="text-md font-semibold text-orange-900 mb-3 flex items-center">
+                        <i class="fas fa-sticky-note mr-2"></i>
+                        Observações
+                    </h4>
+                    <textarea id="editObservacoes" name="observacoes" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              placeholder="Observações adicionais..."></textarea>
+                </div>
+            </form>
+
+            <!-- Footer do Modal -->
+            <div class="flex items-center justify-end p-4 border-t border-gray-200 space-x-3">
+                <button onclick="closeCNHEditModal()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button onclick="saveCNHChanges()" 
+                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

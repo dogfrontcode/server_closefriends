@@ -11,17 +11,20 @@ MRZ_CONFIG = {
     'total_lines': 3,               # 3 linhas MRZ
     
     # Espaçamento e fonte
-    'char_spacing': 3,              # 3px entre caracteres (como no teste.py)
-    'line_spacing': 25,             # Espaçamento entre linhas MRZ
-    'font_size': 16,                # Tamanho da fonte MRZ
+    'char_spacing': 1,              # 3px fixo entre caracteres (padronizado)
+    'line_spacing': 30,             # Espaçamento entre linhas MRZ
+    'font_size': 18,                # Tamanho da fonte MRZ (maior para Roboto)
+    'fixed_line_width': None,       # Será calculado dinamicamente
+    'target_char_count': 30,        # Número alvo de caracteres por linha
     
-    # Posicionamento central na imagem 700x440
-    'start_x': 80,                  # Posição X inicial (centralizada)
-    'start_y': 200,                 # Posição Y da primeira linha (meio da tela)
+    # Posicionamento central na imagem 700x440 (verdadeiramente centralizado)
+    'start_x': 95,                  # Posição X inicial (centralizada para 30 chars)
+    'start_y': 190,                 # Posição Y da primeira linha (centro vertical)
     
     # Estilo visual
     'font_color': (0, 0, 0),        # Preto para MRZ
     'background_color': None,       # Sem fundo (transparente)
+    'font_family': 'Roboto-ExtraLight',  # Fonte Roboto ExtraLight 300
     
     # Validação MRZ
     'strict_30_chars': True,        # Forçar exatamente 30 caracteres
@@ -50,19 +53,19 @@ MRZ_FONT_CONFIGS = {
         "size": MRZ_CONFIG['font_size'],
         "color": MRZ_CONFIG['font_color'],
         "bold": False,
-        "family": "OCR-B"  # Fonte ideal para MRZ
+        "family": "Roboto-ExtraLight"  # Fonte Roboto ExtraLight 300
     },
     "mrz_line_2": {
         "size": MRZ_CONFIG['font_size'],
         "color": MRZ_CONFIG['font_color'],
         "bold": False,
-        "family": "OCR-B"
+        "family": "Roboto-ExtraLight"
     },
     "mrz_line_3": {
         "size": MRZ_CONFIG['font_size'],
         "color": MRZ_CONFIG['font_color'],
         "bold": False,
-        "family": "OCR-B"
+        "family": "Roboto-ExtraLight"
     }
 }
 

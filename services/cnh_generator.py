@@ -20,10 +20,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from static.cnh_matriz.front_coordinates import CNH_COORDINATES, FONT_CONFIGS, TEMPLATE_PATH, FOTO_3X4_AREA, ASSINATURA_AREA
 from static.cnh_matriz.back_coordinates import CNH_BACK_COORDINATES, BACK_FONT_CONFIGS, BACK_TEMPLATE_PATH, QR_CODE_AREA, CODIGOS_RESTRICAO
-from static.cnh_matriz.back_linha_coordinates import (
-    MRZ_CONFIG, MRZ_LINE_COORDINATES, MRZ_FONT_CONFIGS, 
-    BACK_LINHA_TEMPLATE_PATH, format_mrz_line, get_mrz_char_positions, validate_mrz_line
-)
+from static.cnh_matriz.back_linha_coordinates import MRZ_CONFIG, MRZ_LINE_COORDINATES, MRZ_FONT_CONFIGS, BACK_LINHA_TEMPLATE_PATH, format_mrz_line
 from services.path_manager import CNHPathManager, CNHPaths
 
 logger = logging.getLogger(__name__)
@@ -1445,10 +1442,332 @@ class CNHImageGenerator:
         except Exception as e:
             logger.error(f"Erro ao gerar códigos de segurança: {str(e)}")
     
+    def _apply_mrz_data_to_back_linha(self, draw, cnh_request):
+        """
+        Aplica dados MRZ no template back-linha.png usando as coordenadas específicas.
+        
+        Args:
+            draw: Objeto ImageDraw
+            cnh_request: Objeto CNHRequest com dados
+        """
+        try:
+            logger.info(f"🎯 Aplicando dados MRZ para CNH ID: {cnh_request.id}")
+            
+            # Gerar dados MRZ baseados na CNH
+            mrz_data = self._generate_mrz_data(cnh_request)
+            
+            # Aplicar cada linha MRZ com espaçamento fixo
+            for line_name, line_data in mrz_data.items():
+                if line_name in MRZ_LINE_COORDINATES and line_name in MRZ_FONT_CONFIGS:
+                    base_coord = MRZ_LINE_COORDINATES[line_name]["position"]
+                    font_config = MRZ_FONT_CONFIGS[line_name]
+                    
+                    # Usar fonte específica para MRZ
+                    font = self._get_mrz_font(font_config["size"])
+                    
+                    # Ajustar linha para largura fixa com preenchimento
+                    adjusted_line = self._adjust_mrz_line_to_fixed_width(line_data, font, draw)
+                    
+                    # Calcular posição centralizada baseada na largura fixa
+                    centered_coord = self._get_centered_mrz_position_fixed(draw, adjusted_line, font, base_coord)
+                    
+                    # Desenhar linha MRZ com espaçamento fixo
+                    self._draw_mrz_text_with_fixed_spacing(draw, adjusted_line, centered_coord, font, font_config["color"])
+                    logger.info(f"✅ MRZ {line_name}: '{adjusted_line}' em {centered_coord}")
+            
+            logger.info(f"🎯 MRZ aplicado com sucesso para CNH ID: {cnh_request.id}")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao aplicar dados MRZ: {str(e)}")
+            raise e
+    
+    def _generate_mrz_data(self, cnh_request):
+        """
+        Gera as 3 linhas MRZ baseadas nos dados da CNH.
+        
+        Args:
+            cnh_request: Objeto CNHRequest
+            
+        Returns:
+            dict: Dicionário com as 3 linhas MRZ formatadas
+        """
+        try:
+            # Linha 1: Tipo de documento + País + Número do documento
+            doc_type = "I"  # I = Identidade
+            country = "BRA"  # Brasil
+            doc_number = (cnh_request.numero_registro or f"{cnh_request.id:011d}")[:9]  # 9 dígitos
+            check_digit = "0"  # Dígito verificador (simplificado)
+            line1_raw = f"{doc_type}<{country}{doc_number}<{check_digit}"
+            line1 = format_mrz_line(line1_raw, 30)
+            
+            # Linha 2: Data nascimento + Sexo + Data validade + Nacionalidade
+            if cnh_request.data_nascimento:
+                birth_date = cnh_request.data_nascimento.strftime("%y%m%d")
+            else:
+                birth_date = "900101"  # Data padrão
+            
+            sexo = cnh_request.sexo_condutor or "M"
+            
+            if cnh_request.validade:
+                exp_date = cnh_request.validade.strftime("%y%m%d")
+            else:
+                exp_date = "301231"  # Data padrão
+            
+            line2_raw = f"{birth_date}{sexo}{exp_date}{country}"
+            line2 = format_mrz_line(line2_raw, 30)
+            
+            # Linha 3: Nome do titular
+            nome = (cnh_request.nome_completo or "NOME TESTE").upper()
+            # Converter espaços em << para formato MRZ
+            nome_mrz = nome.replace(" ", "<<")
+            line3 = format_mrz_line(nome_mrz, 30)
+            
+            mrz_data = {
+                "mrz_line_1": line1,
+                "mrz_line_2": line2,
+                "mrz_line_3": line3
+            }
+            
+            logger.info(f"📝 MRZ gerado para {nome}:")
+            logger.info(f"   Linha 1: {line1}")
+            logger.info(f"   Linha 2: {line2}")
+            logger.info(f"   Linha 3: {line3}")
+            
+            return mrz_data
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao gerar dados MRZ: {str(e)}")
+            raise e
+    
+    def _get_mrz_font(self, size):
+        """
+        Retorna fonte Roboto ExtraLight para MRZ.
+        
+        Args:
+            size: Tamanho da fonte
+            
+        Returns:
+            ImageFont: Fonte Roboto ExtraLight para MRZ
+        """
+        # Priorizar fonte Roboto ExtraLight 300
+        roboto_font_candidates = [
+            # Roboto ExtraLight baixada
+            os.path.join(self.FONTS_DIR, "Roboto-ExtraLight.ttf"),
+            # Fallbacks do sistema
+            "/System/Library/Fonts/HelveticaNeue-Thin.ttf",
+            "/System/Library/Fonts/HelveticaNeue-Light.ttf",
+            # Outras fontes light do sistema
+            "/usr/share/fonts/truetype/roboto/Roboto-Light.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-ExtraLight.ttf",
+            "Roboto-ExtraLight",
+            "Roboto-Light",
+            "HelveticaNeue-Thin"
+        ]
+        
+        for font_path in roboto_font_candidates:
+            try:
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, size)
+                    logger.info(f"✅ Fonte MRZ carregada: {font_path}")
+                    return font
+                else:
+                    # Tentar pelo nome
+                    font = ImageFont.truetype(font_path, size)
+                    logger.info(f"✅ Fonte MRZ carregada pelo nome: {font_path}")
+                    return font
+            except Exception as e:
+                logger.debug(f"❌ Erro ao carregar fonte {font_path}: {e}")
+                continue
+        
+        # Fallback para fonte padrão
+        logger.warning(f"⚠️ Roboto ExtraLight não encontrada. Usando fonte padrão.")
+        return self._get_font(size)
+    
+    def _get_centered_mrz_position(self, draw, text, font, base_coord):
+        """
+        Calcula posição centralizada para o texto MRZ baseada no tamanho real.
+        
+        Args:
+            draw: Objeto ImageDraw
+            text: Texto a ser desenhado
+            font: Fonte a ser usada
+            base_coord: Coordenada base (Y será mantido, X será centralizado)
+            
+        Returns:
+            tuple: Coordenada (x, y) centralizada
+        """
+        try:
+            # Obter dimensões da imagem (template back-linha.png = 700x440)
+            image_width = 700
+            
+            # Calcular largura real do texto
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            
+            # Calcular posição X para centralizar
+            centered_x = (image_width - text_width) // 2
+            
+            # Manter Y da coordenada base
+            base_x, base_y = base_coord
+            
+            logger.debug(f"📏 Texto '{text}': largura={text_width}px, centralizando em x={centered_x}")
+            
+            return (centered_x, base_y)
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao calcular posição centralizada: {e}")
+            # Fallback para coordenada base
+            return base_coord
+    
+    def _calculate_fixed_mrz_width(self, font):
+        """
+        Calcula a largura que 30 caracteres ocupam com espaçamento e largura fixos.
+        
+        Args:
+            font: Fonte a ser usada
+            
+        Returns:
+            int: Largura total para 30 caracteres
+        """
+        try:
+            # Usar largura fixa para cada caractere (baseada no maior caractere)
+            # Isso garante que todos os caracteres tenham o mesmo espaço
+            ref_chars = "MWQX0123456789<"  # Caracteres mais largos para referência
+            max_char_width = 0
+            
+            temp_draw = ImageDraw.Draw(Image.new('RGB', (100, 100)))
+            for char in ref_chars:
+                bbox = temp_draw.textbbox((0, 0), char, font=font)
+                char_width = bbox[2] - bbox[0]
+                max_char_width = max(max_char_width, char_width)
+            
+            # Usar a largura do maior caractere como largura fixa
+            fixed_char_width = max_char_width
+            
+            # Largura total = (largura_fixa * 30) + (espaçamento * 29)
+            char_spacing = MRZ_CONFIG['char_spacing']
+            total_width = (fixed_char_width * 30) + (char_spacing * 29)
+            
+            logger.info(f"📏 Largura fixa calculada: char_fixo={fixed_char_width}px, espaçamento={char_spacing}px, total={total_width}px")
+            return total_width, fixed_char_width
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao calcular largura fixa: {e}")
+            return 500, 15  # Valores fallback
+    
+    def _adjust_mrz_line_to_fixed_width(self, line_data, font, draw):
+        """
+        Ajusta linha MRZ para ter exatamente a largura de 30 caracteres,
+        preenchendo com '<' se necessário.
+        
+        Args:
+            line_data: Dados da linha MRZ
+            font: Fonte a ser usada
+            draw: Objeto ImageDraw
+            
+        Returns:
+            str: Linha ajustada para largura fixa
+        """
+        try:
+            # Garantir que a linha tenha no máximo 30 caracteres
+            if len(line_data) > 30:
+                adjusted = line_data[:30]
+            else:
+                adjusted = line_data
+            
+            # Preencher com '<' até completar 30 caracteres
+            while len(adjusted) < 30:
+                adjusted += '<'
+            
+            logger.debug(f"📝 Linha ajustada: '{line_data}' -> '{adjusted}' ({len(adjusted)} chars)")
+            return adjusted
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao ajustar linha: {e}")
+            return line_data.ljust(30, '<')[:30]  # Fallback
+    
+    def _get_centered_mrz_position_fixed(self, draw, text, font, base_coord):
+        """
+        Calcula posição centralizada baseada na largura fixa de 30 caracteres.
+        
+        Args:
+            draw: Objeto ImageDraw
+            text: Texto (sempre 30 caracteres)
+            font: Fonte a ser usada
+            base_coord: Coordenada base
+            
+        Returns:
+            tuple: Coordenada (x, y) centralizada
+        """
+        try:
+            # Obter dimensões da imagem (700x440)
+            image_width = 700
+            
+            # Calcular largura fixa para 30 caracteres
+            fixed_width, fixed_char_width = self._calculate_fixed_mrz_width(font)
+            
+            # Calcular posição X para centralizar
+            centered_x = (image_width - fixed_width) // 2
+            
+            # Manter Y da coordenada base
+            base_x, base_y = base_coord
+            
+            logger.debug(f"📍 Posição fixa: largura={fixed_width}px, centro_x={centered_x}")
+            
+            return (centered_x, base_y)
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao calcular posição fixa: {e}")
+            return base_coord
+    
+    def _draw_mrz_text_with_fixed_spacing(self, draw, text, start_coord, font, color):
+        """
+        Desenha texto MRZ com espaçamento e largura REALMENTE fixos.
+        Cada caractere ocupa o mesmo espaço, independente do seu tamanho real.
+        
+        Args:
+            draw: Objeto ImageDraw
+            text: Texto para desenhar (30 caracteres)
+            start_coord: Coordenada inicial
+            font: Fonte a ser usada
+            color: Cor do texto
+        """
+        try:
+            start_x, start_y = start_coord
+            current_x = start_x
+            
+            # Calcular largura fixa e espaçamento
+            fixed_width, fixed_char_width = self._calculate_fixed_mrz_width(font)
+            char_spacing = MRZ_CONFIG['char_spacing']
+            
+            # Cada "slot" de caractere = largura_fixa + espaçamento
+            char_slot_width = fixed_char_width + char_spacing
+            
+            # Desenhar cada caractere em seu slot fixo
+            for i, char in enumerate(text):
+                # Calcular posição X do slot atual
+                slot_x = start_x + (i * char_slot_width)
+                
+                # Calcular largura real do caractere atual
+                char_bbox = draw.textbbox((0, 0), char, font=font)
+                actual_char_width = char_bbox[2] - char_bbox[0]
+                
+                # Centralizar caractere dentro do seu slot
+                char_x = slot_x + (fixed_char_width - actual_char_width) // 2
+                
+                # Desenhar caractere centralizado no slot
+                draw.text((char_x, start_y), char, fill=color, font=font)
+            
+            logger.debug(f"🎨 Texto desenhado com slots fixos: '{text}' (slot={char_slot_width}px)")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao desenhar texto com slots fixos: {e}")
+            # Fallback: desenhar texto normal
+            draw.text(start_coord, text, fill=color, font=font)
+
     def generate_back2_cnh(self, cnh_request, output_path=None):
         """
         Gera o BACK2 da CNH usando a imagem back-linha.png como template.
-        🎯 AGORA COM MRZ ALINHADO PERFEITAMENTE!
         
         Args:
             cnh_request: Objeto CNHRequest com dados
@@ -1458,37 +1777,21 @@ class CNHImageGenerator:
             str: Caminho do arquivo gerado
         """
         try:
-            logger.info(f"🚀 Iniciando geração do BACK2 da CNH com MRZ - ID: {cnh_request.id}")
+            logger.info(f"Iniciando geração do BACK2 da CNH - ID: {cnh_request.id}")
             
             # Carregar template back-linha.png
-            template_path = os.path.join(os.path.dirname(__file__), '..', BACK_LINHA_TEMPLATE_PATH)
+            template_path = os.path.join(os.path.dirname(__file__), '..', "static/cnh_matriz/back-linha.png")
             if not os.path.exists(template_path):
                 logger.warning(f"Template back-linha.png não encontrado: {template_path}. Usando imagem em branco.")
                 image = Image.new('RGB', (self.IMAGE_WIDTH, self.IMAGE_HEIGHT), (255, 255, 255))
             else:
                 image = Image.open(template_path).copy()
-                logger.info(f"✅ Template back-linha.png carregado: {template_path}")
             
-            # ===== ETAPA 1: APLICAR DADOS BÁSICOS =====
             draw = ImageDraw.Draw(image)
-            # Aplicar dados usando as mesmas coordenadas do verso (back_coordinates.py)
-            self._apply_back_data_with_coordinates(draw, cnh_request)
             
-            # ===== ETAPA 2: APLICAR MRZ COM ALINHAMENTO PERFEITO =====
-            logger.info("📋 Aplicando MRZ com alinhamento perfeito...")
+            # Aplicar dados MRZ usando coordenadas específicas do back-linha
+            self._apply_mrz_data_to_back_linha(draw, cnh_request)
             
-            # Inicializar gerador MRZ
-            mrz_generator = MRZGenerator()
-            
-            # Gerar linhas MRZ a partir dos dados da CNH
-            mrz_line1, mrz_line2, mrz_line3 = mrz_generator.generate_mrz_from_cnh_data(cnh_request)
-            
-            # Aplicar MRZ na imagem com alinhamento perfeito
-            image = mrz_generator.generate_mrz_on_image(image, mrz_line1, mrz_line2, mrz_line3)
-            
-            logger.info("✅ MRZ aplicado com sucesso no BACK2!")
-            
-            # ===== ETAPA 3: SALVAR IMAGEM =====
             # Usar path específico ou gerar automaticamente
             if output_path:
                 filepath = output_path
@@ -1504,200 +1807,12 @@ class CNHImageGenerator:
             # Salvar imagem
             image.save(filepath, 'PNG', quality=95)
             
-            logger.info(f"🎉 Back2 da CNH com MRZ gerado com sucesso - Arquivo: {filepath}")
+            logger.info(f"Back2 da CNH gerado com sucesso - Arquivo: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"❌ Erro ao gerar back2 da CNH com MRZ - ID: {cnh_request.id}, Erro: {str(e)}")
+            logger.error(f"Erro ao gerar back2 da CNH - ID: {cnh_request.id}, Erro: {str(e)}")
             raise e
-
-class MRZGenerator:
-    """
-    🎯 Gerador de MRZ (Machine Readable Zone) com alinhamento perfeito
-    Integrado ao sistema CNH para uso com back-linha.png
-    """
-    
-    def __init__(self):
-        """Inicializa o gerador MRZ com configurações otimizadas."""
-        self.config = MRZ_CONFIG
-        self.font = self.load_mrz_font()
-        logger.info("MRZGenerator inicializado com sucesso")
-    
-    def load_mrz_font(self):
-        """
-        Carrega a fonte ideal para MRZ (OCR-B ou similar monoespaçada).
-        """
-        font_paths = [
-            "static/fonts/OCRB.ttf",      # OCR-B (ideal para MRZ)
-            "static/fonts/OCR-B-10.ttf",  # Variação OCR-B
-            "static/fonts/courier.ttf",    # Courier como fallback
-            "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",  # Linux
-            "/System/Library/Fonts/Courier.ttc",  # macOS
-            "C:/Windows/Fonts/courbd.ttf",  # Windows
-        ]
-        
-        for font_path in font_paths:
-            if os.path.exists(font_path):
-                try:
-                    return ImageFont.truetype(font_path, self.config['font_size'])
-                except:
-                    continue
-        
-        # Usa fonte padrão se nenhuma for encontrada
-        logger.warning("⚠️ Fonte OCR-B não encontrada, usando fonte padrão para MRZ")
-        return ImageFont.load_default()
-    
-    def calculate_char_positions(self, line_text: str) -> list:
-        """
-        Calcula a posição X exata de cada caractere para alinhamento perfeito.
-        (Implementação idêntica ao teste.py)
-        
-        Args:
-            line_text: Texto da linha (30 caracteres)
-            
-        Returns:
-            Lista de posições X para cada caractere
-        """
-        positions = []
-        
-        # Pega largura de um caractere de referência
-        temp_img = Image.new('RGB', (1, 1))
-        temp_draw = ImageDraw.Draw(temp_img)
-        bbox = temp_draw.textbbox((0, 0), "W", font=self.font)
-        char_width = bbox[2] - bbox[0]
-        
-        # Calcula posição de cada caractere
-        for i in range(len(line_text)):
-            x = self.config['start_x'] + (i * (char_width + self.config['char_spacing']))
-            positions.append(x)
-        
-        return positions
-    
-    def generate_mrz_on_image(self, 
-                              image: Image.Image,
-                              mrz_line1: str,
-                              mrz_line2: str, 
-                              mrz_line3: str) -> Image.Image:
-        """
-        Gera MRZ com alinhamento perfeito na imagem fornecida.
-        
-        Args:
-            image: Imagem base (back-linha.png)
-            mrz_line1: Primeira linha do MRZ
-            mrz_line2: Segunda linha do MRZ
-            mrz_line3: Terceira linha do MRZ
-            
-        Returns:
-            Image: Imagem com MRZ aplicado
-        """
-        try:
-            draw = ImageDraw.Draw(image)
-            
-            # Formata as três linhas MRZ
-            formatted_lines = [
-                format_mrz_line(mrz_line1),
-                format_mrz_line(mrz_line2),
-                format_mrz_line(mrz_line3)
-            ]
-            
-            # Debug: imprime as linhas formatadas
-            logger.info("\n📋 MRZ Formatado:")
-            for i, line in enumerate(formatted_lines, 1):
-                logger.info(f"Linha {i}: '{line}' (tamanho: {len(line)})")
-            
-            # Desenha cada linha MRZ caractere por caractere para alinhamento perfeito
-            for line_num, line_text in enumerate(formatted_lines):
-                y_position = self.config['start_y'] + (line_num * self.config['line_spacing'])
-                
-                # Calcula posições X para cada caractere
-                x_positions = self.calculate_char_positions(line_text)
-                
-                # Desenha cada caractere individualmente
-                for char_index, char in enumerate(line_text):
-                    x_position = x_positions[char_index]
-                    
-                    # Desenha o caractere
-                    draw.text(
-                        (x_position, y_position),
-                        char,
-                        fill=self.config['font_color'],
-                        font=self.font
-                    )
-            
-            logger.info("✅ MRZ aplicado com sucesso na imagem")
-            return image
-            
-        except Exception as e:
-            logger.error(f"❌ Erro ao gerar MRZ na imagem: {str(e)}")
-            raise e
-    
-    def generate_mrz_from_cnh_data(self, cnh_request) -> tuple:
-        """
-        Gera as 3 linhas MRZ a partir dos dados da CNH.
-        
-        Args:
-            cnh_request: Objeto CNHRequest com dados
-            
-        Returns:
-            tuple: (mrz_line1, mrz_line2, mrz_line3)
-        """
-        try:
-            # LINHA 1: Tipo documento + país + número documento + dígito verificador + preenchimento
-            doc_type = "I"  # I = Cartão de identidade
-            country = "BRA"  # Brasil
-            doc_number = cnh_request.numero_registro or f"{cnh_request.id:011d}"
-            check_digit = "0"  # Simplificado
-            
-            # Formato: I<BRA + número(até 9 dígitos) + check + preenchimento até 30
-            line1_base = f"{doc_type}<{country}{doc_number}<{check_digit}22"
-            mrz_line1 = format_mrz_line(line1_base)
-            
-            # LINHA 2: Data nascimento + sexo + validade + nacionalidade + preenchimento + check final
-            if cnh_request.data_nascimento:
-                birth_date = cnh_request.data_nascimento.strftime("%y%m%d")
-            else:
-                birth_date = "750629"  # Default
-            
-            sexo = cnh_request.sexo_condutor or "M"
-            
-            if cnh_request.validade:
-                expiry_date = cnh_request.validade.strftime("%y%m%d")
-            else:
-                expiry_date = "340724"  # Default
-            
-            nationality = "BRA"
-            final_check = "8"  # Simplificado
-            
-            # Formato: YYMMDD + M/F + YYMMDD + BRA + preenchimento + check
-            line2_base = f"{birth_date}{sexo}{expiry_date}{nationality}"
-            line2_padded = line2_base + "<" * (29 - len(line2_base)) + final_check
-            mrz_line2 = format_mrz_line(line2_padded)
-            
-            # LINHA 3: Nome completo (sobrenome << nomes)
-            nome_completo = cnh_request.nome_completo or "RODRIGO ANDRADE DE FIGUEIREDO"
-            # Dividir em sobrenome e nomes
-            partes_nome = nome_completo.strip().split()
-            if len(partes_nome) > 1:
-                sobrenome = partes_nome[-1]  # Último nome como sobrenome
-                nomes = " ".join(partes_nome[:-1])  # Resto como nomes
-                nome_formatado = f"{sobrenome}<<{nomes}".replace(" ", "<")
-            else:
-                nome_formatado = nome_completo.replace(" ", "<")
-            
-            mrz_line3 = format_mrz_line(nome_formatado)
-            
-            logger.info(f"✅ MRZ gerado para CNH ID: {cnh_request.id}")
-            return mrz_line1, mrz_line2, mrz_line3
-            
-        except Exception as e:
-            logger.error(f"❌ Erro ao gerar MRZ dos dados: {str(e)}")
-            # Fallback com dados padrão
-            return (
-                "I<BRA0318154714<022<<<<<<<<<<",
-                "7506291M3407242BRA<<<<<<<<<<8<", 
-                "RODRIGO<<ANDRADE<DE<FIGUEIREDO"
-            )
-
     
     def generate_complete_cnh(self, cnh_request):
         """

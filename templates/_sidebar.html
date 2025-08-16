@@ -1,0 +1,99 @@
+        <div id="sidebar" class="bg-white shadow-xl">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="logo-container flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-id-card text-white text-lg"></i>
+                        </div>
+                        <div class="sidebar-text">
+                            <h1 class="text-xl font-bold text-gray-800">Sistema CNH</h1>
+                            <p class="text-sm text-gray-500">Beta Lab</p>
+                        </div>
+                    </div>
+                    <!-- Collapse Button - Minimalista -->
+                    <button onclick="toggleSidebarCollapse()" 
+                            class="collapse-btn"
+                            title="Colapsar sidebar">
+                        <i id="collapseIcon" class="fas fa-chevron-left text-gray-600 text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- User Info Card -->
+            <div class="user-info-card p-4 m-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">{{ username }}</p>
+                        <p class="text-xs text-gray-500">Usuário Premium</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-white rounded-lg">
+                    <span class="text-xs text-gray-600">Saldo Disponível:</span>
+                    <span class="credit-value text-sm font-bold text-green-600">{{ user_credits.formatted }}</span>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="px-4 pb-4">
+                <ul class="space-y-2">
+                    <!-- Dashboard -->
+                    <li>
+                        <a href="#" onclick="showDashboard()" class="sidebar-item active flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-blue-50 group">
+                            <i class="fas fa-home w-5 h-5 text-blue-500 group-hover:text-blue-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Gerar CNH -->
+                    <li>
+                        <a href="#" onclick="showCNHSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-green-50 group">
+                            <i class="fas fa-plus-circle w-5 h-5 text-green-500 group-hover:text-green-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Gerar CNH</span>
+                        </a>
+                    </li>
+                    
+                    <!-- CNHs Salvas -->
+                    <li>
+                        <a href="#" onclick="showMyCNHsSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-purple-50 group">
+                            <i class="fas fa-id-card w-5 h-5 text-purple-500 group-hover:text-purple-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">CNHs Salvas</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Divider -->
+                    <li class="my-4 sidebar-text">
+                        <hr class="border-gray-200">
+                    </li>
+                    
+                    <!-- Créditos -->
+                    <li>
+                        <a href="#" onclick="showCreditsSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-yellow-50 group">
+                            <i class="fas fa-coins w-5 h-5 text-yellow-500 group-hover:text-yellow-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Créditos</span>
+                        </a>
+                    </li>
+                    
+
+                    
+                    <!-- Perfil -->
+                    <li>
+                        <a href="#" onclick="showProfileSection()" class="sidebar-item flex items-center p-3 rounded-lg transition-all duration-200 hover:bg-gray-50 group">
+                            <i class="fas fa-user-cog w-5 h-5 text-gray-500 group-hover:text-gray-600"></i>
+                            <span class="sidebar-text ml-3 text-gray-700 group-hover:text-gray-900 font-medium">Perfil</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Logout Button -->
+            <div class="absolute bottom-4 left-4 right-4">
+                <button onclick="logout()" class="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded-lg transition-all duration-200 hover:bg-red-100 group">
+                    <i class="fas fa-sign-out-alt w-5 h-5"></i>
+                    <span class="sidebar-text ml-2 font-medium">Sair</span>
+                </button>
+            </div>
+        </div>

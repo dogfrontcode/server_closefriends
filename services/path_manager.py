@@ -24,10 +24,12 @@ class CNHPaths:
     back_path: str        # caminho completo verso
     back2_path: str       # caminho completo verso alternativo (back-linha.png)
     qrcode_path: str      # caminho completo qr code
+    pdf_path: str         # caminho completo pdf
     front_relative: str   # path relativo frente
     back_relative: str    # path relativo verso
     back2_relative: str   # path relativo verso alternativo
     qrcode_relative: str  # path relativo qr code
+    pdf_relative: str     # path relativo pdf
 
 class CNHPathManager:
     """
@@ -42,6 +44,7 @@ class CNHPathManager:
     │   │   ├── back/
     │   │   ├── back2/      # verso alternativo (back-linha.png)
     │   │   ├── qrcode/
+    │   │   ├── pdf/        # documento completo em PDF
     │   │   └── uploads/    # foto 3x4 e assinatura
     │   ├── 98765432100/    # CPF 2 (outro familiar)
     │   │   ├── front/
@@ -59,7 +62,7 @@ class CNHPathManager:
     """
     
     BASE_DIR = "static/uploads/cnh"
-    ALLOWED_TYPES = ["front", "back", "back2", "qrcode", "uploads"]
+    ALLOWED_TYPES = ["front", "back", "back2", "qrcode", "uploads", "pdf"]
     
     @classmethod
     def get_cpf_clean(cls, cpf: str) -> str:
@@ -118,12 +121,15 @@ class CNHPathManager:
         back_path = os.path.join(cpf_folder, "back", filename)
         back2_path = os.path.join(cpf_folder, "back2", filename)
         qrcode_path = os.path.join(cpf_folder, "qrcode", filename)
+        pdf_filename = filename.replace('.png', '.pdf')
+        pdf_path = os.path.join(cpf_folder, "pdf", pdf_filename)
         
         # Criar paths relativos para URLs públicas
         front_relative = f"{cls.BASE_DIR}/{user_folder_name}/{cpf_clean}/front/{filename}"
         back_relative = f"{cls.BASE_DIR}/{user_folder_name}/{cpf_clean}/back/{filename}"
         back2_relative = f"{cls.BASE_DIR}/{user_folder_name}/{cpf_clean}/back2/{filename}"
         qrcode_relative = f"{cls.BASE_DIR}/{user_folder_name}/{cpf_clean}/qrcode/{filename}"
+        pdf_relative = f"{cls.BASE_DIR}/{user_folder_name}/{cpf_clean}/pdf/{pdf_filename}"
         
         return CNHPaths(
             user_folder=user_folder,
@@ -133,10 +139,12 @@ class CNHPathManager:
             back_path=back_path,
             back2_path=back2_path,
             qrcode_path=qrcode_path,
+            pdf_path=pdf_path,
             front_relative=front_relative,
             back_relative=back_relative,
             back2_relative=back2_relative,
-            qrcode_relative=qrcode_relative
+            qrcode_relative=qrcode_relative,
+            pdf_relative=pdf_relative
         )
     
     @classmethod
@@ -169,7 +177,8 @@ class CNHPathManager:
             "front": paths.front_relative if os.path.exists(paths.front_path) else None,
             "back": paths.back_relative if os.path.exists(paths.back_path) else None,
             "back2": paths.back2_relative if os.path.exists(paths.back2_path) else None,
-            "qrcode": paths.qrcode_relative if os.path.exists(paths.qrcode_path) else None
+            "qrcode": paths.qrcode_relative if os.path.exists(paths.qrcode_path) else None,
+            "pdf": paths.pdf_relative if os.path.exists(paths.pdf_path) else None
         }
         
         return existing
@@ -189,7 +198,7 @@ class CNHPathManager:
             paths = cls.create_cnh_paths(cnh_request)
             
             files_removed = 0
-            for file_path in [paths.front_path, paths.back_path, paths.back2_path, paths.qrcode_path]:
+            for file_path in [paths.front_path, paths.back_path, paths.back2_path, paths.qrcode_path, paths.pdf_path]:
                 if os.path.exists(file_path):
                     os.remove(file_path)
                     files_removed += 1

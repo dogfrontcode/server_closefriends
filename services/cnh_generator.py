@@ -1947,7 +1947,24 @@ def gerar_cnh_basica(cnh_request):
             logger.warning(f"⚠️ Erro na geração de QR code (não crítico): {str(qr_e)}")
             # Continuar sem QR code
         
-        # ===== ETAPA 4: VALIDAR IMAGENS =====
+        # ===== ETAPA 4: GERAR PDF =====
+        logger.info(f"📄 Gerando PDF com todas as imagens...")
+        pdf_path = None
+        try:
+            from .pdf_generator import gerar_cnh_pdf
+            success_pdf, pdf_path, pdf_error = gerar_cnh_pdf(cnh_request)
+            
+            if success_pdf:
+                logger.info(f"✅ PDF gerado com sucesso: {pdf_path}")
+            else:
+                logger.warning(f"⚠️ Falha ao gerar PDF: {pdf_error}")
+                # Continuar sem PDF - não é crítico
+                
+        except Exception as pdf_e:
+            logger.warning(f"⚠️ Erro na geração de PDF (não crítico): {str(pdf_e)}")
+            # Continuar sem PDF
+        
+        # ===== ETAPA 5: VALIDAR IMAGENS =====
         logger.info(f"✅ Validando imagens geradas...")
         
         if not generator.validate_image(front_path):
@@ -1965,16 +1982,18 @@ def gerar_cnh_basica(cnh_request):
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
         
-        # ===== ETAPA 5: PREPARAR RESULTADO =====
+        # ===== ETAPA 6: PREPARAR RESULTADO =====
         result_paths = {
             "front_path": front_path,
             "back_path": back_path,
             "back2_path": back2_path,
             "qrcode_path": qr_path if 'qr_path' in locals() and qr_path else None,
+            "pdf_path": pdf_path if pdf_path else None,
             "front_relative": paths["front_relative"],
             "back_relative": paths["back_relative"],
             "back2_relative": paths["back2_relative"],
-            "qrcode_relative": paths["qrcode_relative"] if 'qr_path' in locals() and qr_path else None
+            "qrcode_relative": paths["qrcode_relative"] if 'qr_path' in locals() and qr_path else None,
+            "pdf_relative": paths["pdf_relative"] if pdf_path else None
         }
         
         # Marcar como completa com path da frente (compatibilidade)
@@ -2033,13 +2052,29 @@ def gerar_cnh_completa(cnh_request):
             cnh_request.marcar_como_falha(error_msg)
             return False, None, error_msg
         
+        # ===== GERAR PDF =====
+        logger.info(f"📄 Gerando PDF com todas as imagens...")
+        pdf_path = None
+        try:
+            from .pdf_generator import gerar_cnh_pdf
+            success_pdf, pdf_path, pdf_error = gerar_cnh_pdf(cnh_request)
+            
+            if success_pdf:
+                logger.info(f"✅ PDF gerado com sucesso: {pdf_path}")
+            else:
+                logger.warning(f"⚠️ Falha ao gerar PDF: {pdf_error}")
+                
+        except Exception as pdf_e:
+            logger.warning(f"⚠️ Erro na geração de PDF (não crítico): {str(pdf_e)}")
+        
         # Marcar como completa
         cnh_request.marcar_como_completa(front_path)
         
         paths = {
             "front": front_path,
             "back": back_path,
-            "back2": back2_path
+            "back2": back2_path,
+            "pdf": pdf_path if pdf_path else None
         }
         
         logger.info(f"CNH completa gerada com sucesso - ID: {cnh_request.id}")

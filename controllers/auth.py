@@ -1,27 +1,25 @@
 # controllers/auth.py
-from flask import request, jsonify, redirect, url_for, session, render_template
+from flask import request, jsonify, redirect, url_for, session, render_template, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from models.user import User
-from models import db
 from . import auth_bp
 import logging
 from datetime import datetime, timedelta
+from signals import user_registered
 
 logger = logging.getLogger(__name__)
 
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """
-    Registra um novo usuário.
+    """Registra um novo usuário utilizando um sinal.
 
     Requer um payload JSON com os parâmetros:
       - username: nome de usuário (único)
       - password: senha do usuário
       - phone_number: número de celular
 
-    Retorna:
-      - JSON com mensagem de sucesso ou erro e o status HTTP correspondente.
+    Retorna JSON com mensagem de sucesso ou erro e o status HTTP correspondente.
     """
     data = request.get_json()
 
@@ -33,19 +31,17 @@ def register():
     password = data['password']
     phone_number = data['phone_number']
 
-    # Verifica se o usuário já existe
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "O nome de usuário já existe."}), 400
-
-    # Cria o novo usuário e define a senha com hash
-    new_user = User(username=username, phone_number=phone_number)
-    new_user.set_password(password)
-    
     try:
-        db.session.add(new_user)
-        db.session.commit()
+        # O receptor do sinal é responsável por criar o usuário
+        user_registered.send(
+            current_app._get_current_object(),
+            username=username,
+            password=password,
+            phone_number=phone_number,
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
-        db.session.rollback()
         return jsonify({"error": "Erro ao criar usuário.", "detalhes": str(e)}), 500
 
     return jsonify({"message": "Usuário registrado com sucesso."}), 201

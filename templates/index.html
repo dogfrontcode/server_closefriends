@@ -197,13 +197,9 @@
     <div class="login-card w-full max-w-md space-y-8 rounded-xl p-8">
       <div class="space-y-4">
         <h2 class="text-center text-3xl font-bold text-white">Bem vindo de volta!</h2>
-        <p class="mt-2 text-center text-sm text-gray-300">
-          Ainda não possui uma conta?
-          <a href="#" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-300">Registre-se</a>
-        </p>
-      </div>
-      <!-- Note que o form não tem action nem method, pois vamos capturar o envio via JavaScript -->
-      <form id="loginForm" class="mt-8 space-y-6">
+        </div>
+        <!-- Note que o form não tem action nem method, pois vamos capturar o envio via JavaScript -->
+        <form id="loginForm" class="mt-8 space-y-6">
         <div class="space-y-4">
           <div>
             <label for="usuario" class="block text-sm font-medium text-gray-300">Usuário</label>
@@ -217,12 +213,15 @@
           </div>
         </div>
   
-        <button type="submit" class="login-button w-full rounded-lg px-4 py-3 text-sm font-semibold text-white">
-          Entrar
-        </button>
-      </form>
-    </div>
-  </div>
+          <button type="submit" class="login-button w-full rounded-lg px-4 py-3 text-sm font-semibold text-white">
+            Entrar
+          </button>
+          <button type="button" onclick="window.location.href='{{ url_for('register_page') }}'" class="login-button w-full mt-2 rounded-lg px-4 py-3 text-sm font-semibold text-white">
+            Registrar
+          </button>
+        </form>
+        </div>
+      </div>
   
   <script>
     // Dark mode functions

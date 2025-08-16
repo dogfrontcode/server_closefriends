@@ -1567,30 +1567,39 @@ class CNHImageGenerator:
     
     def _get_mrz_font(self, size):
         """
-        Retorna fonte Nunito Medium para MRZ.
+        Retorna fonte Signika-Regular para MRZ.
         
         Args:
             size: Tamanho da fonte
             
         Returns:
-            ImageFont: Fonte Nunito Medium para MRZ
+            ImageFont: Fonte Signika-Regular para MRZ
         """
-        # Priorizar fonte Nunito Medium adicionada manualmente
+        # Priorizar fonte Signika-Regular adicionada manualmente
         font_candidates = [
-            # Nunito Medium como primeira opção
+            # Signika-Regular como primeira opção
+            os.path.join(self.FONTS_DIR, "Signika-Regular.ttf"),
+            # RobotoMono-Light como fallback
+            os.path.join(self.FONTS_DIR, "RobotoMono-Light.ttf"),
+            # Cousine-Regular como fallback
+            os.path.join(self.FONTS_DIR, "cousine-regular.ttf"),
+            # Nunito-Medium como fallback
             os.path.join(self.FONTS_DIR, "Nunito-Medium.ttf"),
             # Outras fontes Nunito como fallback
             os.path.join(self.FONTS_DIR, "Nunito-VariableFont_wght.ttf"),
-            os.path.join(self.FONTS_DIR, "Nunito-Italic-VariableFont_wght.ttf"),
+            # RobotoMono-Light como fallback
+            os.path.join(self.FONTS_DIR, "RobotoMono-Light.ttf"),
+            # Outras fontes Roboto como fallback
+            os.path.join(self.FONTS_DIR, "Roboto-ExtraLight.ttf"),
+            os.path.join(self.FONTS_DIR, "Nunito-VariableFont_wght.ttf"),
             # Outras fontes como fallback
             os.path.join(self.FONTS_DIR, "NotoSansDuployan-Regular.ttf"),
-            os.path.join(self.FONTS_DIR, "Roboto-ExtraLight.ttf"),
             # Fallbacks do sistema
             "/System/Library/Fonts/HelveticaNeue.ttf",
             "/System/Library/Fonts/HelveticaNeue-Light.ttf",
             # Outras fontes do sistema
-            "/usr/share/fonts/truetype/roboto/Roboto-Regular.ttf",
-            "Nunito-Medium",
+            "/usr/share/fonts/truetype/roboto/RobotoMono-Light.ttf",
+            "RobotoMono-Light",
             "HelveticaNeue"
         ]
         
@@ -1600,7 +1609,13 @@ class CNHImageGenerator:
                     font = ImageFont.truetype(font_path, size)
                     
                     # Identificar qual fonte foi carregada
-                    if "Nunito-Medium.ttf" in font_path:
+                    if "Signika-Regular.ttf" in font_path:
+                        logger.warning(f"🎯 FONTE MRZ SIGNIKA-REGULAR CARREGADA: {font_path}")
+                    elif "RobotoMono-Light.ttf" in font_path:
+                        logger.warning(f"🎯 FONTE MRZ ROBOTOMONO-LIGHT CARREGADA: {font_path}")
+                    elif "cousine-regular.ttf" in font_path:
+                        logger.warning(f"🎯 FONTE MRZ COUSINE-REGULAR CARREGADA: {font_path}")
+                    elif "Nunito-Medium.ttf" in font_path:
                         logger.warning(f"🎯 FONTE MRZ NUNITO MEDIUM CARREGADA: {font_path}")
                     elif "Nunito" in font_path and "VariableFont" in font_path:
                         logger.warning(f"🎯 FONTE MRZ NUNITO VARIABLE CARREGADA: {font_path}")
@@ -1618,7 +1633,7 @@ class CNHImageGenerator:
                 continue
         
         # Fallback para fonte padrão
-        logger.warning(f"⚠️ Nunito Medium não encontrada. Usando fonte padrão.")
+        logger.warning(f"⚠️ Signika-Regular não encontrada. Usando fonte padrão.")
         return self._get_font(size)
     
     def _get_centered_mrz_position(self, draw, text, font, base_coord):
@@ -1659,35 +1674,24 @@ class CNHImageGenerator:
     
     def _calculate_fixed_mrz_width(self, font):
         """
-        Calcula a largura que 30 caracteres ocupam com espaçamento e largura fixos.
+        Calcula a largura que 30 caracteres ocupam na área de 433px.
         
         Args:
             font: Fonte a ser usada
             
         Returns:
-            int: Largura total para 30 caracteres
+            tuple: (largura_total=389, largura_por_caractere)
         """
         try:
-            # Usar largura fixa para cada caractere (baseada no maior caractere)
-            # Isso garante que todos os caracteres tenham o mesmo espaço
-            ref_chars = "MWQX0123456789<"  # Caracteres mais largos para referência
-            max_char_width = 0
+            # Importar configuração da área fixa
+            from static.cnh_matriz.back_linha_coordinates import MRZ_CONFIG
             
-            temp_draw = ImageDraw.Draw(Image.new('RGB', (100, 100)))
-            for char in ref_chars:
-                bbox = temp_draw.textbbox((0, 0), char, font=font)
-                char_width = bbox[2] - bbox[0]
-                max_char_width = max(max_char_width, char_width)
+            # Usar largura fixa da configuração (433px)
+            fixed_total_width = MRZ_CONFIG.get('fixed_line_width', 433)
             
-            # Usar largura reduzida (85%) para diminuir espaçamento sem sobreposição
-            fixed_char_width = int(max_char_width * 0.60)  # 85% do tamanho original
-            
-            # Largura total = (largura_fixa * 30) + (espaçamento * 29)
-            char_spacing = MRZ_CONFIG['char_spacing']
-            total_width = (fixed_char_width * 30) + (char_spacing * 29)
-            
-            logger.info(f"📏 Largura otimizada: original={max_char_width}px, reduzida={fixed_char_width}px (85%), espaçamento={char_spacing}px, total={total_width}px")
-            return total_width, fixed_char_width
+            # Retornar largura fixa da área (433px) e largura por caractere
+            logger.info(f"📏 Área MRZ fixa: {fixed_total_width}px, {fixed_char_width}px por caractere")
+            return fixed_total_width, fixed_char_width
             
         except Exception as e:
             logger.error(f"❌ Erro ao calcular largura fixa: {e}")
@@ -1744,15 +1748,16 @@ class CNHImageGenerator:
             # Calcular largura fixa para 30 caracteres
             fixed_width, fixed_char_width = self._calculate_fixed_mrz_width(font)
             
-            # Calcular posição X para centralizar
-            centered_x = (image_width - fixed_width) // 2
+            # Usar posição X do config ao invés de centralizar
+            from static.cnh_matriz.back_linha_coordinates import MRZ_CONFIG
+            configured_x = MRZ_CONFIG['start_x']
             
             # Manter Y da coordenada base
             base_x, base_y = base_coord
             
-            logger.debug(f"📍 Posição fixa: largura={fixed_width}px, centro_x={centered_x}")
+            logger.debug(f"📍 Posição fixa: largura={fixed_width}px, config_x={configured_x}")
             
-            return (centered_x, base_y)
+            return (configured_x, base_y)
             
         except Exception as e:
             logger.error(f"❌ Erro ao calcular posição fixa: {e}")

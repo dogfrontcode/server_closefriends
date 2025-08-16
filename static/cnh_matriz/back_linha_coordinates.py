@@ -10,16 +10,16 @@ MRZ_CONFIG = {
     'chars_per_line': 30,           # Padrão MRZ: exatamente 30 caracteres por linha
     'total_lines': 3,               # 3 linhas MRZ
     
-    # Espaçamento e fonte
-    'char_spacing': 1,              # 3px fixo entre caracteres (padronizado)
-    'line_spacing': 30,             # Espaçamento entre linhas MRZ
-    'font_size': 18,                # Tamanho da fonte MRZ (maior para Roboto)
-    'fixed_line_width': None,       # Será calculado dinamicamente
+    # Espaçamento e fonte para área 433x82
+    'char_spacing': -1,             # Espaçamento negativo para aproximar caracteres
+    'line_spacing': 27,             # Espaçamento entre linhas (82÷3=27px por linha)
+    'font_size': 20,                # Tamanho da fonte ajustado para caber
+    'fixed_line_width': 433,        # Largura fixa da área MRZ
     'target_char_count': 30,        # Número alvo de caracteres por linha
     
     # Posicionamento central na imagem 700x440 (verdadeiramente centralizado)
-    'start_x': 95,                  # Posição X inicial (centralizada para 30 chars)
-    'start_y': 190,                 # Posição Y da primeira linha (centro vertical)
+    'start_x': 120,                  # Posição X inicial (centralizada para 30 chars)
+    'start_y': 310,                 # Posição Y da primeira linha (centro vertical)
     
     # Estilo visual
     'font_color': (0, 0, 0),        # Preto para MRZ

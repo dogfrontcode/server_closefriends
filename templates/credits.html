@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema CNH - Créditos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="min-h-screen bg-gradient overflow-x-hidden overflow-y-auto">
+    <div id="particles-js"></div>
+
+    <div class="flex min-h-screen relative z-10">
+        {% include "_sidebar.html" %}
+        <div class="flex-1 min-h-screen main-content">
+            {% include "_header.html" %}
+            <main class="p-6 bg-gray-50 min-h-screen">
+                <!-- Credits Section -->
+                <div id="creditsSection" class="section-content">
+
+                    <!-- Adicionar Carga -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+                        <div class="relative bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-200">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-indigo-600/5"></div>
+                            <div class="relative flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <i class="fas fa-plus-circle text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-gray-900">Adicionar Carga</h3>
+                                        <p class="text-sm text-gray-600">Escolha um valor para recarregar sua conta</p>
+                                    </div>
+                                </div>
+                                <div class="hidden sm:flex items-center space-x-2 text-sm text-blue-600 font-medium">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Seguro e Instantâneo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <!-- Opções de Recarga PIX -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                                <!-- R$ 10,00 - Básico -->
+                                <button onclick="payWithPix(10.0)" class="relative group transform hover:-translate-y-1 transition-all duration-300 ease-out">
+                                    <div class="bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl p-6 shadow-lg group-hover:shadow-2xl transition-all duration-300">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
+                                        <div class="relative">
+                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                                <i class="fab fa-pix text-white text-2xl drop-shadow-md"></i>
+                                            </div>
+                                            <div class="text-left">
+                                                <h3 class="text-xl font-bold text-white mb-1">R$ 10,00</h3>
+                                                <p class="text-green-100 text-sm font-medium">2 CNHs</p>
+                                                <div class="mt-3 text-xs text-green-100 opacity-80">Pagamento via PIX</div>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                                            <i class="fab fa-pix text-white text-xs"></i>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <!-- R$ 25,00 - Popular -->
+                                <button onclick="payWithPix(25.0)" class="relative group transform hover:-translate-y-1 transition-all duration-300 ease-out">
+                                    <div class="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-6 shadow-lg group-hover:shadow-2xl transition-all duration-300">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
+                                        <div class="relative">
+                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                                <i class="fab fa-pix text-white text-2xl drop-shadow-md"></i>
+                                            </div>
+                                            <div class="text-left">
+                                                <h3 class="text-xl font-bold text-white mb-1">R$ 25,00</h3>
+                                                <p class="text-cyan-100 text-sm font-medium">5 CNHs</p>
+                                                <div class="mt-3 text-xs text-cyan-100 opacity-80">Pagamento via PIX</div>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-fire text-white text-xs"></i>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <!-- R$ 50,00 - Recomendado -->
+                                <button onclick="payWithPix(50.0)" class="relative group transform hover:-translate-y-1 transition-all duration-300 ease-out">
+                                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-lg group-hover:shadow-2xl transition-all duration-300 ring-2 ring-yellow-400/50">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
+                                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                            <div class="bg-gradient-to-r from-yellow-400 to-orange-400 text-xs font-bold text-gray-900 px-3 py-1 rounded-full shadow-md">
+                                                POPULAR
+                                            </div>
+                                        </div>
+                                        <div class="relative">
+                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                                <i class="fab fa-pix text-yellow-300 text-2xl drop-shadow-md"></i>
+                                            </div>
+                                            <div class="text-left">
+                                                <h3 class="text-xl font-bold text-white mb-1">R$ 50,00</h3>
+                                                <p class="text-indigo-100 text-sm font-medium">10 CNHs</p>
+                                                <div class="mt-3 text-xs text-indigo-100 opacity-80">Pagamento via PIX</div>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-star text-gray-900 text-xs"></i>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <!-- R$ 100,00 - Premium -->
+                                <button onclick="payWithPix(100.0)" class="relative group transform hover:-translate-y-1 transition-all duration-300 ease-out">
+                                    <div class="bg-gradient-to-br from-purple-600 to-pink-700 rounded-2xl p-6 shadow-lg group-hover:shadow-2xl transition-all duration-300">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
+                                        <div class="relative">
+                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                                <i class="fab fa-pix text-yellow-300 text-2xl drop-shadow-md"></i>
+                                            </div>
+                                            <div class="text-left">
+                                                <h3 class="text-xl font-bold text-white mb-1">R$ 100,00</h3>
+                                                <p class="text-purple-100 text-sm font-medium">20 CNHs</p>
+                                                <div class="mt-3 text-xs text-purple-100 opacity-80">Pagamento via PIX</div>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-crown text-gray-900 text-xs"></i>
+                                        </div>
+                                        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-400/10 to-transparent pointer-events-none"></div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Informações PIX -->
+                            <div class="relative">
+                                <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mt-6 border border-blue-200 shadow-sm">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+                                            <i class="fab fa-pix text-white text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-lg font-bold text-gray-900">Pagamento via PIX</h4>
+                                            <p class="text-sm text-gray-600">Seguro, rápido e instantâneo</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="flex items-center space-x-3 p-3 bg-white rounded-xl border border-blue-100">
+                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-check text-green-600 text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">Pagamento Instantâneo</p>
+                                                <p class="text-xs text-gray-600">Créditos adicionados automaticamente</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center space-x-3 p-3 bg-white rounded-xl border border-blue-100">
+                                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-shield-alt text-blue-600 text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">100% Seguro</p>
+                                                <p class="text-xs text-gray-600">Criptografia de ponta a ponta</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Extrato de Transações -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                        <div class="relative bg-gradient-to-r from-purple-50 to-pink-50 p-6 border-b border-gray-200">
+                            <div class="absolute inset-0 bg-gradient-to-r from-purple-600/5 to-pink-600/5"></div>
+                            <div class="relative flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <i class="fas fa-file-invoice text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-gray-900">Extrato de Transações</h3>
+                                        <p class="text-sm text-gray-600">Histórico completo das suas atividades</p>
+                                    </div>
+                                </div>
+                                <button onclick="loadTransactionHistory()" 
+                                        class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                                    <i class="fas fa-refresh text-sm"></i>
+                                    <span>Atualizar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div id="transactionHistory">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-history text-4xl mb-3 opacity-50"></i>
+                                    <p>Carregando histórico de transações...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <!-- Profile Section -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal PIX - Design Moderno e Minimalista com Scroll -->
+    <div id="pixModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-auto my-8 transform transition-all duration-300 scale-95 opacity-0 max-h-[85vh] overflow-y-auto flex flex-col" id="pixModalContent">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                        <i class="fab fa-pix text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Pagamento PIX</h3>
+                        <p class="text-sm text-gray-500">Recarga <span id="pixModalAmount">R$ 0,00</span></p>
+                    </div>
+                </div>
+                <button onclick="closePixModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times text-gray-400 hover:text-gray-600"></i>
+                </button>
+            </div>
+
+            <!-- Status do PIX -->
+            <div id="pixStatus" class="hidden mx-6 mt-6 flex-shrink-0">
+                <div class="flex items-center space-x-3 p-4 rounded-2xl bg-blue-50 border border-blue-200">
+                    <div class="w-8 h-8 flex items-center justify-center">
+                        <div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-blue-900">Aguardando pagamento...</p>
+                        <p class="text-xs text-blue-600">O PIX expira em <span id="pixTimer">15:00</span> minutos</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conteúdo do Modal - Com Scroll Interno -->
+            <div class="p-6 space-y-6 flex-1 overflow-y-auto">
+                <!-- QR Code -->
+                <div class="text-center">
+                    <div class="bg-gray-50 rounded-2xl p-6 border-2 border-dashed border-gray-200">
+                        <div id="pixQrCodeContainer" class="hidden">
+                            <img id="pixQrCode" class="w-48 h-48 mx-auto rounded-xl shadow-sm" alt="QR Code PIX">
+                            <p class="text-sm text-gray-600 mt-3">Escaneie o código QR com seu banco</p>
+                        </div>
+                        <div id="pixLoadingQr" class="flex flex-col items-center space-y-3">
+                            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p class="text-sm text-gray-600">Gerando código PIX...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Código PIX Copia e Cola -->
+                <div id="pixCodeContainer" class="hidden">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-copy mr-2"></i>
+                        Código PIX (Copiar e Colar)
+                    </label>
+                    <div class="relative">
+                        <textarea id="pixCode" 
+                                  readonly 
+                                  rows="4" 
+                                  class="w-full p-4 text-xs font-mono bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Código PIX será gerado..."></textarea>
+                        <button onclick="copyPixCode()" 
+                                class="absolute top-2 right-2 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+                            <i id="copyIcon" class="fas fa-copy"></i>
+                            <span id="copyText" class="ml-1">Copiar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Instruções -->
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i class="fas fa-info text-white text-xs"></i>
+                        </div>
+                        <div class="text-sm">
+                            <p class="font-medium text-amber-900 mb-2">Como pagar:</p>
+                            <ol class="text-amber-800 space-y-1 text-xs">
+                                <li>1. Abra o app do seu banco</li>
+                                <li>2. Escaneie o QR Code ou copie o código</li>
+                                <li>3. Confirme o pagamento</li>
+                                <li>4. Seus créditos serão adicionados automaticamente</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer do Modal -->
+            <div class="flex items-center justify-between p-6 border-t border-gray-100 bg-gray-50 rounded-b-3xl flex-shrink-0">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-shield-alt mr-2 text-green-500"></i>
+                    Pagamento 100% seguro
+                </div>
+                <button onclick="closePixModal()" 
+                        class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm font-medium">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso PIX -->
+    <div id="pixSuccessModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full mx-auto text-center p-8 transform transition-all duration-300">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-3xl text-green-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Pagamento Aprovado!</h3>
+            <p class="text-gray-600 mb-6">Seus créditos foram adicionados com sucesso.</p>
+            <button onclick="closePixSuccessModal()" 
+                    class="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200">
+                Continuar
+            </button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

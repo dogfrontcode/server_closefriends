@@ -1679,14 +1679,14 @@ class CNHImageGenerator:
                 char_width = bbox[2] - bbox[0]
                 max_char_width = max(max_char_width, char_width)
             
-            # Usar a largura do maior caractere como largura fixa
-            fixed_char_width = max_char_width
+            # Usar largura reduzida (85%) para diminuir espaçamento sem sobreposição
+            fixed_char_width = int(max_char_width * 0.60)  # 85% do tamanho original
             
             # Largura total = (largura_fixa * 30) + (espaçamento * 29)
             char_spacing = MRZ_CONFIG['char_spacing']
             total_width = (fixed_char_width * 30) + (char_spacing * 29)
             
-            logger.info(f"📏 Largura fixa calculada: char_fixo={fixed_char_width}px, espaçamento={char_spacing}px, total={total_width}px")
+            logger.info(f"📏 Largura otimizada: original={max_char_width}px, reduzida={fixed_char_width}px (85%), espaçamento={char_spacing}px, total={total_width}px")
             return total_width, fixed_char_width
             
         except Exception as e:

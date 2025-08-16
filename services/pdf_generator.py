@@ -11,6 +11,11 @@ from typing import Optional, Tuple
 from PIL import Image
 from services.path_manager import CNHPathManager
 
+# Importar coordenadas do arquivo específico
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'static', 'cnh_matriz'))
+from pdf_coordinates import get_pdf_coordinates
+
 logger = logging.getLogger(__name__)
 
 class CNHPDFGenerator:
@@ -19,13 +24,15 @@ class CNHPDFGenerator:
     Usa uma imagem base e empilha as 4 imagens CNH.
     """
     
-    # Configurações
-    BASE_TEMPLATE = "static/cnh_matriz/pdf-base.jpg"
-    SPACING = 5  # pixels entre imagens
+    # Configurações (agora vêm do arquivo de coordenadas)
+    def __init__(self, layout_name="stacked"):
+        """Inicializa o gerador com layout específico."""
+        self.layout = get_pdf_coordinates(layout_name)
+        self.BASE_TEMPLATE = self.layout["base_template"]
+        self.SPACING = self.layout.get("spacing_between_images", 5)
+        logger.debug(f"PDF Generator inicializado com layout: {layout_name}")
     
-    def __init__(self):
-        """Inicializa o gerador de PDF."""
-        logger.debug("PDF Generator inicializado")
+
     
     def _validate_image(self, image_path: str) -> bool:
         """Valida se uma imagem existe."""
@@ -106,14 +113,21 @@ class CNHPDFGenerator:
             base_img = Image.open(base_path).convert('RGB')
             logger.info(f"Template base carregado: {base_img.size}")
             
-            # Posição inicial para empilhar as imagens (canto superior esquerdo)
-            start_x = 50  # margem esquerda
-            start_y = 50  # margem superior
-            current_y = start_y
+            # Obter configurações do layout
+            start_x = self.layout.get("start_x", 50)
+            start_y = self.layout.get("start_y", 50)
+            target_width = self.layout.get("target_width", 800)
+            target_height = self.layout.get("target_height", 600)
             
-            # REDIMENSIONAR imagens para ficarem mais visíveis na base grande
-            target_width = 800  # largura maior para melhor visualização
-            target_height = 600  # altura maior
+            # Verificar se tem posições específicas ou usar empilhamento dinâmico
+            use_specific_positions = "positions" in self.layout
+            current_y = start_y  # Sempre inicializar current_y
+            
+            if use_specific_positions:
+                positions = self.layout["positions"]
+                logger.info("Usando posições específicas do layout")
+            else:
+                logger.info("Usando empilhamento dinâmico")
             
             # Carregar e empilhar cada imagem
             image_names = ['front', 'back', 'back2', 'qrcode']
@@ -123,17 +137,26 @@ class CNHPDFGenerator:
                     # Abrir imagem
                     img = Image.open(img_path).convert('RGB')
                     
-                    # Redimensionar mantendo proporção para ficar mais visível
-                    ratio = min(target_width / img.width, target_height / img.height)
-                    new_size = (int(img.width * ratio), int(img.height * ratio))
-                    img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+                    # Redimensionar mantendo proporção
+                    if not self.layout.get("preserve_original_size", False):
+                        ratio = min(target_width / img.width, target_height / img.height)
+                        new_size = (int(img.width * ratio), int(img.height * ratio))
+                        img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+                    else:
+                        img_resized = img
+                        new_size = img.size
                     
-                    # Colar na posição atual
-                    base_img.paste(img_resized, (start_x, current_y))
-                    logger.info(f"✅ {image_names[i]} colada em ({start_x}, {current_y}) - Tamanho: {new_size}")
+                    # Determinar posição
+                    if use_specific_positions:
+                        pos_x, pos_y = positions.get(image_names[i], (start_x, current_y))
+                    else:
+                        pos_x, pos_y = start_x, current_y
+                        current_y += img_resized.height + self.SPACING
                     
-                    # Atualizar posição Y para próxima imagem
-                    current_y += img_resized.height + self.SPACING
+                    # Colar na posição determinada
+                    base_img.paste(img_resized, (pos_x, pos_y))
+                    logger.info(f"✅ {image_names[i]} colada em ({pos_x}, {pos_y}) - Tamanho: {new_size}")
+                    
                 else:
                     logger.warning(f"⚠️ Imagem {image_names[i]} não encontrada: {img_path}")
             
@@ -177,21 +200,22 @@ class CNHPDFGenerator:
 
 # ==================== FUNÇÃO PRINCIPAL ====================
 
-def gerar_cnh_pdf(cnh_request, output_path: Optional[str] = None) -> Tuple[bool, str, str]:
+def gerar_cnh_pdf(cnh_request, output_path: Optional[str] = None, layout: str = "stacked") -> Tuple[bool, str, str]:
     """
     Função principal para gerar PDF de CNH.
     
     Args:
         cnh_request: Objeto CNHRequest
         output_path: Caminho específico (opcional)
+        layout: Layout a usar ("stacked", "grid", "template_based")
         
     Returns:
         tuple: (success: bool, pdf_path: str, error_message: str)
     """
     try:
-        generator = CNHPDFGenerator()
+        generator = CNHPDFGenerator(layout)
         
-        logger.info(f"🚀 GERANDO PDF CNH - ID: {cnh_request.id}")
+        logger.info(f"🚀 GERANDO PDF CNH - ID: {cnh_request.id} - Layout: {layout}")
         
         # Gerar PDF
         pdf_path = generator.generate_cnh_pdf(cnh_request, output_path)

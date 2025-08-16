@@ -1481,6 +1481,50 @@ class CNHImageGenerator:
             logger.error(f"❌ Erro ao aplicar dados MRZ: {str(e)}")
             raise e
     
+    def _format_name_for_mrz(self, nome_completo):
+        """
+        Formata nome para MRZ com lógica especial:
+        - Primeiro espaço vira "<<"
+        - Outros espaços viram "<"
+        
+        Exemplo:
+        "JOÃO SILVA SANTOS" -> "JOÃO<<SILVA<SANTOS"
+        
+        Args:
+            nome_completo: Nome completo em maiúsculas
+            
+        Returns:
+            str: Nome formatado para MRZ
+        """
+        try:
+            # Dividir nome em partes
+            partes_nome = nome_completo.strip().split()
+            
+            if not partes_nome:
+                return "NOME<<TESTE"
+            
+            if len(partes_nome) == 1:
+                # Se só tem um nome, retorna ele mesmo
+                return partes_nome[0]
+            
+            # Primeiro nome + << + outros nomes separados por <
+            primeiro_nome = partes_nome[0]
+            outros_nomes = partes_nome[1:]
+            
+            # Juntar outros nomes com "<"
+            outros_nomes_formatados = "<".join(outros_nomes)
+            
+            # Formato final: PRIMEIRO<<OUTROS<NOMES
+            nome_mrz = f"{primeiro_nome}<<{outros_nomes_formatados}"
+            
+            logger.debug(f"📝 Nome formatado para MRZ: '{nome_completo}' -> '{nome_mrz}'")
+            return nome_mrz
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao formatar nome para MRZ: {e}")
+            # Fallback para formatação simples
+            return nome_completo.replace(" ", "<<")
+
     def _generate_mrz_data(self, cnh_request):
         """
         Gera as 3 linhas MRZ baseadas nos dados da CNH.
@@ -1492,34 +1536,16 @@ class CNHImageGenerator:
             dict: Dicionário com as 3 linhas MRZ formatadas
         """
         try:
-            # Linha 1: Tipo de documento + País + Número do documento
-            doc_type = "I"  # I = Identidade
-            country = "BRA"  # Brasil
-            doc_number = (cnh_request.numero_registro or f"{cnh_request.id:011d}")[:9]  # 9 dígitos
-            check_digit = "0"  # Dígito verificador (simplificado)
-            line1_raw = f"{doc_type}<{country}{doc_number}<{check_digit}"
-            line1 = format_mrz_line(line1_raw, 30)
+            # Linha 1: FIXA (sempre a mesma)
+            line1 = "I<BRA0318154714<022<<<<<<<<<<" 
             
-            # Linha 2: Data nascimento + Sexo + Data validade + Nacionalidade
-            if cnh_request.data_nascimento:
-                birth_date = cnh_request.data_nascimento.strftime("%y%m%d")
-            else:
-                birth_date = "900101"  # Data padrão
+            # Linha 2: FIXA (sempre a mesma)
+            line2 = "7506291M3407242BRA<<<<<<<<<<8<"
             
-            sexo = cnh_request.sexo_condutor or "M"
-            
-            if cnh_request.validade:
-                exp_date = cnh_request.validade.strftime("%y%m%d")
-            else:
-                exp_date = "301231"  # Data padrão
-            
-            line2_raw = f"{birth_date}{sexo}{exp_date}{country}"
-            line2 = format_mrz_line(line2_raw, 30)
-            
-            # Linha 3: Nome do titular
+            # Linha 3: Nome do titular (com lógica especial de espaçamento)
             nome = (cnh_request.nome_completo or "NOME TESTE").upper()
-            # Converter espaços em << para formato MRZ
-            nome_mrz = nome.replace(" ", "<<")
+            # Usar formatação especial para nome MRZ
+            nome_mrz = self._format_name_for_mrz(nome)
             line3 = format_mrz_line(nome_mrz, 30)
             
             mrz_data = {
@@ -1541,46 +1567,58 @@ class CNHImageGenerator:
     
     def _get_mrz_font(self, size):
         """
-        Retorna fonte Roboto ExtraLight para MRZ.
+        Retorna fonte Nunito Medium para MRZ.
         
         Args:
             size: Tamanho da fonte
             
         Returns:
-            ImageFont: Fonte Roboto ExtraLight para MRZ
+            ImageFont: Fonte Nunito Medium para MRZ
         """
-        # Priorizar fonte Roboto ExtraLight 300
-        roboto_font_candidates = [
-            # Roboto ExtraLight baixada
+        # Priorizar fonte Nunito Medium adicionada manualmente
+        font_candidates = [
+            # Nunito Medium como primeira opção
+            os.path.join(self.FONTS_DIR, "Nunito-Medium.ttf"),
+            # Outras fontes Nunito como fallback
+            os.path.join(self.FONTS_DIR, "Nunito-VariableFont_wght.ttf"),
+            os.path.join(self.FONTS_DIR, "Nunito-Italic-VariableFont_wght.ttf"),
+            # Outras fontes como fallback
+            os.path.join(self.FONTS_DIR, "NotoSansDuployan-Regular.ttf"),
             os.path.join(self.FONTS_DIR, "Roboto-ExtraLight.ttf"),
             # Fallbacks do sistema
-            "/System/Library/Fonts/HelveticaNeue-Thin.ttf",
+            "/System/Library/Fonts/HelveticaNeue.ttf",
             "/System/Library/Fonts/HelveticaNeue-Light.ttf",
-            # Outras fontes light do sistema
-            "/usr/share/fonts/truetype/roboto/Roboto-Light.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-ExtraLight.ttf",
-            "Roboto-ExtraLight",
-            "Roboto-Light",
-            "HelveticaNeue-Thin"
+            # Outras fontes do sistema
+            "/usr/share/fonts/truetype/roboto/Roboto-Regular.ttf",
+            "Nunito-Medium",
+            "HelveticaNeue"
         ]
         
-        for font_path in roboto_font_candidates:
+        for font_path in font_candidates:
             try:
                 if os.path.exists(font_path):
                     font = ImageFont.truetype(font_path, size)
-                    logger.info(f"✅ Fonte MRZ carregada: {font_path}")
+                    
+                    # Identificar qual fonte foi carregada
+                    if "Nunito-Medium.ttf" in font_path:
+                        logger.warning(f"🎯 FONTE MRZ NUNITO MEDIUM CARREGADA: {font_path}")
+                    elif "Nunito" in font_path and "VariableFont" in font_path:
+                        logger.warning(f"🎯 FONTE MRZ NUNITO VARIABLE CARREGADA: {font_path}")
+                    else:
+                        logger.warning(f"🎯 FONTE MRZ CARREGADA COM SUCESSO: {font_path}")
+                    
                     return font
                 else:
                     # Tentar pelo nome
                     font = ImageFont.truetype(font_path, size)
-                    logger.info(f"✅ Fonte MRZ carregada pelo nome: {font_path}")
+                    logger.warning(f"🎯 FONTE MRZ CARREGADA PELO NOME: {font_path}")
                     return font
             except Exception as e:
                 logger.debug(f"❌ Erro ao carregar fonte {font_path}: {e}")
                 continue
         
         # Fallback para fonte padrão
-        logger.warning(f"⚠️ Roboto ExtraLight não encontrada. Usando fonte padrão.")
+        logger.warning(f"⚠️ Nunito Medium não encontrada. Usando fonte padrão.")
         return self._get_font(size)
     
     def _get_centered_mrz_position(self, draw, text, font, base_coord):

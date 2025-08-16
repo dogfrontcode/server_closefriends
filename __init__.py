@@ -69,6 +69,10 @@ def create_app():
     @app.route("/")
     def index():
         return render_template("index.html")
+
+    @app.route("/register")
+    def register_page():
+        return render_template("register.html")
     
     # Define a rota do dashboard, que utiliza os dados da sessão
     @app.route("/home")

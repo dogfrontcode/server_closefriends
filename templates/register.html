@@ -245,31 +245,31 @@
                 <h2 class="text-3xl font-bold text-white">Criar Conta</h2>
                 <p class="text-sm text-gray-300">
                     Já possui uma conta?
-                    <a href="index.html" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-300">Entrar</a>
+                    <a href="{{ url_for('index') }}" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-300">Entrar</a>
                 </p>
             </div>
 
-            <form class="mt-8 space-y-6">
+            <form id="registerForm" class="mt-8 space-y-6">
                 <div class="space-y-4">
                     <!-- Username Field -->
                     <div class="input-group">
                         <label for="usuario" class="block text-sm font-medium text-gray-300 mb-1">Nome de Usuário</label>
                         <div class="relative flex items-center">
                             <i class="fas fa-user input-icon text-base"></i>
-                            <input id="usuario" name="usuario" type="text" required 
+                            <input id="usuario" name="usuario" type="text" required
                                 class="input-field input-with-icon mt-1 block w-full rounded-lg p-3 text-white placeholder-gray-400"
                                 placeholder="Digite seu nome de usuário">
                         </div>
                     </div>
 
-                    <!-- Email Field -->
+                    <!-- WhatsApp Field -->
                     <div class="input-group">
-                        <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <label for="whatsapp" class="block text-sm font-medium text-gray-300 mb-1">WhatsApp</label>
                         <div class="relative flex items-center">
-                            <i class="fas fa-envelope input-icon text-base"></i>
-                            <input id="email" name="email" type="email" required 
+                            <i class="fas fa-phone input-icon text-base"></i>
+                            <input id="whatsapp" name="whatsapp" type="text" required
                                 class="input-field input-with-icon mt-1 block w-full rounded-lg p-3 text-white placeholder-gray-400"
-                                placeholder="Digite seu email">
+                                placeholder="Digite seu número de WhatsApp">
                         </div>
                     </div>
 
@@ -278,34 +278,14 @@
                         <label for="senha" class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
                         <div class="relative flex items-center">
                             <i class="fas fa-lock input-icon text-base"></i>
-                            <input id="senha" name="senha" type="password" required 
+                            <input id="senha" name="senha" type="password" required
                                 class="input-field input-with-icon mt-1 block w-full rounded-lg p-3 text-white placeholder-gray-400"
                                 placeholder="Digite sua senha">
                         </div>
-                        <p class="mt-1 text-xs text-gray-400">Mínimo de 8 caracteres</p>
-                    </div>
-
-                    <!-- Confirm Password Field -->
-                    <div class="input-group">
-                        <label for="confirmar-senha" class="block text-sm font-medium text-gray-300 mb-1">Confirmar Senha</label>
-                        <div class="relative flex items-center">
-                            <i class="fas fa-lock input-icon text-base"></i>
-                            <input id="confirmar-senha" name="confirmar-senha" type="password" required 
-                                class="input-field input-with-icon mt-1 block w-full rounded-lg p-3 text-white placeholder-gray-400"
-                                placeholder="Confirme sua senha">
-                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center">
-                    <input id="termos" name="termos" type="checkbox" required
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                    <label for="termos" class="ml-2 block text-sm text-gray-300">
-                        Eu concordo com os <a href="#" class="text-indigo-400 hover:text-indigo-300">Termos de Uso</a>
-                    </label>
-                </div>
-
-                <button type="submit" 
+                <button type="submit"
                     class="register-button w-full rounded-lg px-4 py-3 text-sm font-semibold text-white">
                     Criar Conta
                 </button>
@@ -430,17 +410,41 @@
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
             // Only auto-update if user hasn't manually set a preference
             if (!localStorage.getItem('darkMode')) {
-                if (e.matches) {
-                    document.body.classList.add('dark-mode');
-                    document.getElementById('darkModeIcon').textContent = '☀️';
-                    document.getElementById('darkModeText').textContent = 'Light';
-                    updateParticlesColor(true);
+                  if (e.matches) {
+                      document.body.classList.add('dark-mode');
+                      document.getElementById('darkModeIcon').textContent = '☀️';
+                      document.getElementById('darkModeText').textContent = 'Light';
+                      updateParticlesColor(true);
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      document.getElementById('darkModeIcon').textContent = '🌙';
+                      document.getElementById('darkModeText').textContent = 'Dark';
+                      updateParticlesColor(false);
+                  }
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const username = document.getElementById('usuario').value;
+            const password = document.getElementById('senha').value;
+            const phone_number = document.getElementById('whatsapp').value;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, phone_number })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.href = "{{ url_for('index') }}";
                 } else {
-                    document.body.classList.remove('dark-mode');
-                    document.getElementById('darkModeIcon').textContent = '🌙';
-                    document.getElementById('darkModeText').textContent = 'Dark';
-                    updateParticlesColor(false);
+                    alert('Erro no registro: ' + (data.error || ''));
                 }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                alert('Ocorreu um erro ao tentar registrar.');
             }
         });
     </script>

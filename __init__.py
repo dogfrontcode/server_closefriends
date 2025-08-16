@@ -75,18 +75,49 @@ def create_app():
     def home():
         if 'user_id' not in session:
             return redirect(url_for('index'))
-        
+
         # Buscar informações do usuário incluindo créditos
         # User já foi importado no topo do arquivo
         user = User.query.get(session['user_id'])
         balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
-        
+
         return render_template(
             "home.html",
             user_id=session.get('user_id'),
             username=session.get('username'),
             user_credits=balance_info
         )
+
+    def render_page(template_name):
+        """Renderiza páginas protegidas por sessão com informações do usuário."""
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+
+        user = User.query.get(session['user_id'])
+        balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
+
+        return render_template(
+            template_name,
+            user_id=session.get('user_id'),
+            username=session.get('username'),
+            user_credits=balance_info
+        )
+
+    @app.route("/cnh_form")
+    def cnh_form():
+        return render_page("cnh_form.html")
+
+    @app.route("/saved_cnhs")
+    def saved_cnhs():
+        return render_page("saved_cnhs.html")
+
+    @app.route("/credits")
+    def credits():
+        return render_page("credits.html")
+
+    @app.route("/profile")
+    def profile():
+        return render_page("profile.html")
 
     return app
     

@@ -88,6 +88,66 @@ def create_app():
             user_credits=balance_info
         )
 
+    @app.route("/cnh/form")
+    def cnh_form():
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+
+        user = User.query.get(session['user_id'])
+        balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
+
+        return render_template(
+            "cnh_form.html",
+            user_id=session.get('user_id'),
+            username=session.get('username'),
+            user_credits=balance_info
+        )
+
+    @app.route("/cnhs")
+    def cnhs():
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+
+        user = User.query.get(session['user_id'])
+        balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
+
+        return render_template(
+            "cnhs.html",
+            user_id=session.get('user_id'),
+            username=session.get('username'),
+            user_credits=balance_info
+        )
+
+    @app.route("/credits")
+    def credits():
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+
+        user = User.query.get(session['user_id'])
+        balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
+
+        return render_template(
+            "credits.html",
+            user_id=session.get('user_id'),
+            username=session.get('username'),
+            user_credits=balance_info
+        )
+
+    @app.route("/profile")
+    def profile():
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+
+        user = User.query.get(session['user_id'])
+        balance_info = user.get_credit_balance() if user else {'balance': 0, 'formatted': '0.00'}
+
+        return render_template(
+            "profile.html",
+            user_id=session.get('user_id'),
+            username=session.get('username'),
+            user_credits=balance_info
+        )
+
     return app
     
 

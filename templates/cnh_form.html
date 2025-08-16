@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema CNH - Gerar CNH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="flex min-h-screen">
+        {% include '_sidebar.html' %}
+        <div class="flex-1 p-6">
+            <h1 class="text-2xl font-bold mb-4">Gerar CNH</h1>
+        </div>
+    </div>
+
+    <script>
+    function toggleSidebarCollapse() {
+        const sidebar = document.getElementById('sidebar');
+        const collapseBtn = document.querySelector('.collapse-btn');
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        if (isCollapsed) {
+            sidebar.classList.remove('collapsed');
+            collapseBtn.setAttribute('title', 'Colapsar sidebar');
+        } else {
+            sidebar.classList.add('collapsed');
+            collapseBtn.setAttribute('title', 'Expandir sidebar');
+        }
+    }
+
+    function logout() {
+        fetch('/api/logout', { method: 'POST' })
+            .then(() => window.location.href = '/');
+    }
+    </script>
+</body>
+</html>
+

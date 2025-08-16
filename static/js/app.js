@@ -1439,22 +1439,43 @@
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Página carregada, inicializando...');
-            
+
             // Initialize dark mode
             initializeDarkMode();
-            
+
             // Start auto-refresh
             startAutoRefresh();
-            
-            // Show dashboard by default
-            showDashboard();
-            
+
+            // Determine current path and show appropriate section
+            const path = window.location.pathname;
+            const routeHandlers = {
+                '/home': () => showDashboard(),
+                '/cnh_form': () =>
+                    showSection('cnhSection', 'Gerar CNH', document.querySelector('a.sidebar-item[href="/cnh_form"]')),
+                '/saved_cnhs': () => {
+                    showSection('myCNHsSection', 'CNHs Salvas', document.querySelector('a.sidebar-item[href="/saved_cnhs"]'));
+                    loadMyCNHs(1);
+                },
+                '/credits': () => {
+                    showSection('creditsSection', 'Créditos', document.querySelector('a.sidebar-item[href="/credits"]'));
+                    loadTransactionHistory();
+                },
+                '/profile': () =>
+                    showSection('profileSection', 'Perfil', document.querySelector('a.sidebar-item[href="/profile"]')),
+            };
+
+            if (routeHandlers[path]) {
+                routeHandlers[path]();
+            } else if (document.getElementById('dashboardSection')) {
+                showDashboard();
+            }
+
             // Sidebar toggle for mobile
             const sidebarToggle = document.getElementById('sidebarToggle');
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', toggleSidebar);
             }
-            
+
             // CPF input formatting
             const cpfInput = document.getElementById('cpf');
             if (cpfInput) {

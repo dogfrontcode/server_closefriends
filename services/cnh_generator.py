@@ -172,8 +172,8 @@ class CNHImageGenerator:
             nome_completo = cnh_request.nome_completo or ""
             draw_field_if_exists("nome_completo", nome_completo.upper())
             
-            # Número da habilitação (customizado com dimensões específicas)
-            numero_habilitacao = cnh_request.numero_registro or f"{cnh_request.id + 5000000000:011d}"
+            # Número da habilitação (mesmo que o espelho)
+            numero_habilitacao = cnh_request.numero_espelho or f"{cnh_request.id:011d}"
             self._draw_numero_habilitacao_vertical(draw, str(numero_habilitacao), (50, 304))
             
             # Outros campos - só desenha se tiver coordenadas definidas
@@ -1341,7 +1341,7 @@ class CNHImageGenerator:
             draw_back_field_if_exists("codigo_validacao", cnh_request.codigo_validacao)
             
             # NÚMERO DO ESPELHO (vertical EXATAMENTE como na frente)
-            numero_espelho = cnh_request.numero_espelho or f"{cnh_request.id + 1000000000:011d}"
+            numero_espelho = cnh_request.numero_espelho or f"{cnh_request.id:011d}"
             if numero_espelho:
                 espelho_coord = CNH_BACK_COORDINATES.get("numero_espelho", (50, 304))
                 # USAR A MESMA FUNÇÃO DA FRENTE para garantir formato idêntico

@@ -198,7 +198,7 @@ static/uploads/cnh/*/
 cookies.txt
 headers.txt
 test_*.py
-*_test.py
+# *_test.py  # Comentado para permitir cnh_test.py
 area_assinatura*.png
 teste_coordenadas.png
 

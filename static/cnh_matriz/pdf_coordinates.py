@@ -65,8 +65,35 @@ PDF_LAYOUT_TEMPLATE_BASED = {
     "preserve_original_size": False,  # Se True, não redimensiona
 }
 
+# Layout com coordenadas manuais e tamanho original
+PDF_LAYOUT_MANUAL_COORDS = {
+    "base_template": "static/cnh_matriz/pdf-base.jpg",
+    "preserve_original_size": True,  # Mantém tamanho original 673x496
+    
+    # Coordenadas X,Y específicas para cada imagem
+    # Ajuste essas coordenadas conforme necessário
+    "manual_positions": {
+        "front": {
+            "x": 100,
+            "y": 200
+        },
+        "back": {
+            "x": 900,
+            "y": 200
+        },
+        "back2": {
+            "x": 100,
+            "y": 800
+        },
+        "qrcode": {
+            "x": 900,
+            "y": 800
+        }
+    }
+}
+
 # CONFIGURAÇÃO ATIVA (altere aqui para mudar o layout)
-ACTIVE_LAYOUT = PDF_LAYOUT_STACKED
+ACTIVE_LAYOUT = PDF_LAYOUT_MANUAL_COORDS  # Mudando para usar o novo layout
 
 # Função helper para obter coordenadas
 def get_pdf_coordinates(layout_name="stacked"):
@@ -74,7 +101,7 @@ def get_pdf_coordinates(layout_name="stacked"):
     Retorna as coordenadas para o layout especificado.
     
     Args:
-        layout_name (str): "stacked", "grid", ou "template_based"
+        layout_name (str): "stacked", "grid", "template_based" ou "manual_coords"
         
     Returns:
         dict: Configurações do layout
@@ -82,7 +109,8 @@ def get_pdf_coordinates(layout_name="stacked"):
     layouts = {
         "stacked": PDF_LAYOUT_STACKED,
         "grid": PDF_LAYOUT_GRID, 
-        "template_based": PDF_LAYOUT_TEMPLATE_BASED
+        "template_based": PDF_LAYOUT_TEMPLATE_BASED,
+        "manual_coords": PDF_LAYOUT_MANUAL_COORDS
     }
     
     return layouts.get(layout_name, PDF_LAYOUT_STACKED)

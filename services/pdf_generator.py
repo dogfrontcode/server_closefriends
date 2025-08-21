@@ -149,6 +149,11 @@ class CNHPDFGenerator:
                     # Determinar posição
                     if use_specific_positions:
                         pos_x, pos_y = positions.get(image_names[i], (start_x, current_y))
+                    elif "manual_positions" in self.layout:
+                        # Suporte para coordenadas manuais no formato {"x": 100, "y": 200}
+                        manual_pos = self.layout["manual_positions"].get(image_names[i], {})
+                        pos_x = manual_pos.get("x", start_x)
+                        pos_y = manual_pos.get("y", current_y)
                     else:
                         pos_x, pos_y = start_x, current_y
                         current_y += img_resized.height + self.SPACING

@@ -1175,10 +1175,12 @@ class CNHImageGenerator:
             "back_path": paths.back_path,
             "back2_path": paths.back2_path,
             "qrcode_path": paths.qrcode_path,
+            "pdf_path": paths.pdf_path,
             "front_relative": paths.front_relative,
             "back_relative": paths.back_relative,
             "back2_relative": paths.back2_relative,
-            "qrcode_relative": paths.qrcode_relative
+            "qrcode_relative": paths.qrcode_relative,
+            "pdf_relative": paths.pdf_relative
         }
     
     def generate_thumbnail(self, image_path, max_size=(200, 150)):
